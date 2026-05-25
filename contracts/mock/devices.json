@@ -1,0 +1,18 @@
+[
+  {
+    "id": "pump-001",
+    "name": "Intake Pump 1",
+    "type": "pump",
+    "status": "running",
+    "simulationNodeId": "pump-001",
+    "metrics": [
+      {
+        "key": "flow_rate",
+        "label": "Flow Rate",
+        "value": 1280,
+        "unit": "m3/h",
+        "updatedAt": "2026-05-25T09:00:00.000Z"
+      }
+    ]
+  }
+]

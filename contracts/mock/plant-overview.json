@@ -1,0 +1,12 @@
+{
+  "id": "plant-main",
+  "name": "Main Water Plant",
+  "status": "normal",
+  "waterQuality": {
+    "turbidity": 0.42,
+    "ph": 7.2,
+    "residualChlorine": 0.35
+  },
+  "activeAlertCount": 0,
+  "updatedAt": "2026-05-25T09:00:00.000Z"
+}

@@ -1,0 +1,247 @@
+openapi: 3.1.0
+info:
+  title: Smart Water Plant API
+  version: 0.1.0
+  description: Contract draft for frontend-backend collaboration. This is not a hardware-control API.
+servers:
+  - url: http://localhost:8000
+    description: Local development server
+tags:
+  - name: Plant
+  - name: Devices
+  - name: Alerts
+  - name: Agent
+paths:
+  /api/plant/overview:
+    get:
+      tags:
+        - Plant
+      summary: Get plant overview
+      operationId: getPlantOverview
+      responses:
+        "200":
+          description: Plant overview
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlantOverview"
+  /api/devices:
+    get:
+      tags:
+        - Devices
+      summary: List devices
+      operationId: listDevices
+      responses:
+        "200":
+          description: Device list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Device"
+  /api/alerts:
+    get:
+      tags:
+        - Alerts
+      summary: List active alerts
+      operationId: listAlerts
+      responses:
+        "200":
+          description: Alert list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Alert"
+  /api/agent/runs:
+    post:
+      tags:
+        - Agent
+      summary: Start an Agent run
+      operationId: createAgentRun
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateAgentRunRequest"
+      responses:
+        "202":
+          description: Agent run accepted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgentRun"
+components:
+  schemas:
+    PlantOverview:
+      type: object
+      required:
+        - id
+        - name
+        - status
+        - updatedAt
+      properties:
+        id:
+          type: string
+          example: plant-main
+        name:
+          type: string
+          example: Main Water Plant
+        status:
+          $ref: "#/components/schemas/PlantStatus"
+        waterQuality:
+          $ref: "#/components/schemas/WaterQualitySnapshot"
+        activeAlertCount:
+          type: integer
+          minimum: 0
+        updatedAt:
+          type: string
+          format: date-time
+    PlantStatus:
+      type: string
+      enum:
+        - normal
+        - warning
+        - fault
+        - maintenance
+    Device:
+      type: object
+      required:
+        - id
+        - name
+        - type
+        - status
+      properties:
+        id:
+          type: string
+          example: pump-001
+        name:
+          type: string
+          example: Intake Pump 1
+        type:
+          type: string
+          enum:
+            - pump
+            - valve
+            - tank
+            - sensor
+            - dosing-unit
+            - filter
+            - other
+        status:
+          $ref: "#/components/schemas/DeviceStatus"
+        metrics:
+          type: array
+          items:
+            $ref: "#/components/schemas/Metric"
+        simulationNodeId:
+          type: string
+          description: Stable 3D scene node ID, if this device has a model mapping.
+          example: pump-001
+    DeviceStatus:
+      type: string
+      enum:
+        - idle
+        - running
+        - warning
+        - fault
+        - maintenance
+    Metric:
+      type: object
+      required:
+        - key
+        - label
+        - value
+        - unit
+      properties:
+        key:
+          type: string
+          example: flow_rate
+        label:
+          type: string
+          example: Flow Rate
+        value:
+          type: number
+        unit:
+          type: string
+          example: m3/h
+        updatedAt:
+          type: string
+          format: date-time
+    WaterQualitySnapshot:
+      type: object
+      properties:
+        turbidity:
+          type: number
+          description: NTU
+        ph:
+          type: number
+        residualChlorine:
+          type: number
+          description: mg/L
+    Alert:
+      type: object
+      required:
+        - id
+        - severity
+        - title
+        - status
+        - createdAt
+      properties:
+        id:
+          type: string
+          example: alert-001
+        severity:
+          type: string
+          enum:
+            - info
+            - warning
+            - critical
+        title:
+          type: string
+        status:
+          type: string
+          enum:
+            - active
+            - acknowledged
+            - resolved
+        deviceId:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+    CreateAgentRunRequest:
+      type: object
+      required:
+        - goal
+      properties:
+        goal:
+          type: string
+          example: Analyze abnormal turbidity and suggest actions.
+        context:
+          type: object
+          additionalProperties: true
+    AgentRun:
+      type: object
+      required:
+        - id
+        - status
+        - createdAt
+      properties:
+        id:
+          type: string
+          example: run-001
+        status:
+          type: string
+          enum:
+            - queued
+            - running
+            - succeeded
+            - failed
+            - cancelled
+        createdAt:
+          type: string
+          format: date-time

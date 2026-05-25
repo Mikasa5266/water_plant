@@ -1,0 +1,10 @@
+[
+  {
+    "id": "simulation-event-001",
+    "type": "device.status.changed",
+    "targetId": "pump-001",
+    "timestamp": "2026-05-25T09:00:02.000Z",
+    "status": "running",
+    "durationMs": 1200
+  }
+]

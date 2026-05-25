@@ -1,0 +1,21 @@
+[
+  {
+    "id": "event-001",
+    "runId": "run-001",
+    "type": "run.started",
+    "timestamp": "2026-05-25T09:00:00.000Z",
+    "message": "Agent run started."
+  },
+  {
+    "id": "event-002",
+    "runId": "run-001",
+    "type": "tool.called",
+    "timestamp": "2026-05-25T09:00:01.000Z",
+    "toolCall": {
+      "id": "tool-001",
+      "name": "listDevices",
+      "status": "running",
+      "argumentsSummary": "Query running devices."
+    }
+  }
+]

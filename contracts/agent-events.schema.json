@@ -1,0 +1,74 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://water-plant.local/contracts/agent-events.schema.json",
+  "title": "AgentEvent",
+  "type": "object",
+  "required": ["id", "runId", "type", "timestamp"],
+  "properties": {
+    "id": {
+      "type": "string"
+    },
+    "runId": {
+      "type": "string"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "run.started",
+        "plan.created",
+        "tool.called",
+        "tool.succeeded",
+        "tool.failed",
+        "simulation.requested",
+        "run.succeeded",
+        "run.failed"
+      ]
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "message": {
+      "type": "string"
+    },
+    "toolCall": {
+      "$ref": "#/$defs/toolCall"
+    },
+    "simulationEventId": {
+      "type": "string"
+    },
+    "payload": {
+      "type": "object",
+      "additionalProperties": true
+    }
+  },
+  "$defs": {
+    "toolCall": {
+      "type": "object",
+      "required": ["id", "name", "status"],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["pending", "running", "succeeded", "failed"]
+        },
+        "argumentsSummary": {
+          "type": "string"
+        },
+        "resultSummary": {
+          "type": "string"
+        },
+        "durationMs": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    }
+  },
+  "additionalProperties": false
+}
