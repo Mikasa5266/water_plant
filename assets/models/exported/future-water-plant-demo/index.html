@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>未来水厂智能运营系统</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-mark">FW</div>
+        <div>
+          <h1>未来水厂智能运营系统</h1>
+          <p>Future Water Plant Intelligent Operations System</p>
+        </div>
+      </div>
+      <div class="topbar-status">
+        <div class="status-chip">
+          <span class="status-label">当前模式</span>
+          <strong id="modeLabel">演示模式</strong>
+        </div>
+        <div class="status-chip">
+          <span class="status-label">活跃智能体</span>
+          <strong id="agentCount">4</strong>
+        </div>
+        <div class="status-chip">
+          <span class="status-label">设备在线率</span>
+          <strong id="uptimeLabel">99.2%</strong>
+        </div>
+        <div class="status-chip">
+          <span class="status-label">当前时间</span>
+          <strong id="clockLabel">--:--:--</strong>
+        </div>
+      </div>
+    </header>
+
+    <main class="workspace">
+      <aside class="left-panel panel">
+        <section class="panel-section">
+          <div class="section-header">
+            <h2>工艺链路</h2>
+            <span class="section-tag">Operations</span>
+          </div>
+          <div class="scenario-list" id="scenarioList"></div>
+        </section>
+
+        <section class="panel-section">
+          <div class="section-header">
+            <h2>演示控制</h2>
+            <span class="section-tag">Control</span>
+          </div>
+          <div class="control-grid">
+            <button id="autoPlayBtn" class="primary-btn">一键自动演示</button>
+            <button id="stepPlayBtn" class="ghost-btn">分步推进</button>
+            <button id="executeBtn" class="ghost-btn">执行当前方案</button>
+            <button id="resetBtn" class="ghost-btn">重置场景</button>
+          </div>
+          <div class="control-note" id="controlNote">
+            当前支持自动演示与自由操作，高危动作将进入确认环节。
+          </div>
+        </section>
+
+        <section class="panel-section">
+          <div class="section-header">
+            <h2>工艺指标</h2>
+            <span class="section-tag">Metrics</span>
+          </div>
+          <div class="metrics-grid" id="metricGrid"></div>
+        </section>
+
+        <section class="panel-section warning-section">
+          <div class="section-header">
+            <h2>风险确认</h2>
+            <span class="section-tag">Safety</span>
+          </div>
+          <div class="confirm-card" id="confirmCard">
+            <p class="confirm-title">暂无待确认操作</p>
+            <p class="confirm-desc">当场景涉及高危操作时，系统将在此处等待人工确认。</p>
+            <button id="confirmActionBtn" class="danger-btn" disabled>确认执行</button>
+          </div>
+        </section>
+      </aside>
+
+      <section class="center-stage">
+        <div class="stage-overlay top-overlay">
+          <div class="overview-card">
+            <span class="overview-label">总告警</span>
+            <strong id="alarmCount">03</strong>
+          </div>
+          <div class="overview-card">
+            <span class="overview-label">产水负荷</span>
+            <strong id="loadLabel">81%</strong>
+          </div>
+          <div class="overview-card">
+            <span class="overview-label">系统健康度</span>
+            <strong id="healthLabel">良好</strong>
+          </div>
+          <div class="overview-card">
+            <span class="overview-label">当前链路</span>
+            <strong id="activeScenarioName">加药异常处置</strong>
+          </div>
+        </div>
+
+        <div id="stage3d" class="stage-viewport"></div>
+
+        <div class="stage-overlay bottom-overlay">
+          <div class="timeline-header">
+            <div>
+              <h2>流程时间轴</h2>
+              <p>异常感知 → 数据上送 → AI 分析 → 智能体分发 → 执行恢复</p>
+            </div>
+            <div class="timeline-actions">
+              <button id="prevStepBtn" class="mini-btn">上一步</button>
+              <button id="nextStepBtn" class="mini-btn">下一步</button>
+            </div>
+          </div>
+          <div class="timeline-steps" id="timelineSteps"></div>
+        </div>
+      </section>
+
+      <aside class="right-panel panel">
+        <section class="panel-section">
+          <div class="section-header">
+            <h2>智能体协同</h2>
+            <span class="section-tag">Agents</span>
+          </div>
+          <div class="agent-list" id="agentList"></div>
+        </section>
+
+        <section class="panel-section">
+          <div class="section-header">
+            <h2>多Agent接力链</h2>
+            <span class="section-tag">Handoff</span>
+          </div>
+          <div class="handoff-track" id="handoffTrack"></div>
+        </section>
+
+        <section class="panel-section">
+          <div class="section-header">
+            <h2>当前思考</h2>
+            <span class="section-tag">Thinking</span>
+          </div>
+          <div class="thinking-card" id="thinkingCard"></div>
+        </section>
+
+        <section class="panel-section">
+          <div class="section-header">
+            <h2>AI 决策链</h2>
+            <span class="section-tag">Reasoning</span>
+          </div>
+          <div class="reasoning-flow" id="reasoningFlow"></div>
+        </section>
+
+        <section class="panel-section">
+          <div class="section-header">
+            <h2>执行反馈</h2>
+            <span class="section-tag">Feedback</span>
+          </div>
+          <div class="feedback-list" id="feedbackList"></div>
+        </section>
+
+        <section class="panel-section">
+          <div class="section-header">
+            <h2>执行方案</h2>
+            <span class="section-tag">Action Plan</span>
+          </div>
+          <div class="plan-card">
+            <div class="plan-level" id="riskBadge">LOW RISK</div>
+            <h3 id="planTitle">等待触发演示链路</h3>
+            <p id="planDescription">请选择左侧工艺链路，系统将自动展示监管总管智能体分析、决策派发与设备执行过程。</p>
+            <ul class="plan-points" id="planPoints"></ul>
+          </div>
+        </section>
+
+        <section class="panel-section">
+          <div class="section-header">
+            <h2>事件日志</h2>
+            <span class="section-tag">Logs</span>
+          </div>
+          <div class="log-list" id="logList"></div>
+        </section>
+      </aside>
+    </main>
+  </div>
+
+  <script src="../ht-for-web-8.1.3/lib/core/ht.js"></script>
+  <script src="../ht-for-web-8.1.3/lib/plugin/ht-animation.js"></script>
+  <script src="../ht-for-web-8.1.3/lib/plugin/ht-flow.js"></script>
+  <script src="./app.js"></script>
+</body>
+</html>
