@@ -137,7 +137,7 @@ export const CameraController: React.FC = () => {
       maxDistance={600}
       minPolarAngle={0.15}
       maxPolarAngle={Math.PI / 2 - 0.1}
-      target={[40, 20, 0]}
+      target={[40, 15, 0]}
     />
   );
 };

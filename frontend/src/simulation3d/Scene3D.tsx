@@ -39,8 +39,8 @@ export const Scene3D: React.FC<Scene3DProps> = ({ className }) => {
           toneMapping: 3, // ACESFilmicToneMapping
         }}
         camera={{
-          position: [150, 90, 200],
-          fov: 45,
+          position: [160, 100, 220],
+          fov: 50,
           near: 1,
           far: 3000,
         }}

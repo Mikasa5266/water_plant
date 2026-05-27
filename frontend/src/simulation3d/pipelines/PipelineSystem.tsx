@@ -28,11 +28,11 @@ function buildModulePipes(agentId: AgentId): THREE.Vector3[][] {
   // 三段式管道：模块 → 中间转折点 → 中枢
   return [
     [
-      new THREE.Vector3(mBase[0], 2, mBase[2]),
-      new THREE.Vector3(midX, 3, mBase[2]),
-      new THREE.Vector3(midX, 3, midZ),
-      new THREE.Vector3(sBase[0], 2, midZ),
-      new THREE.Vector3(sBase[0], 2, sBase[2]),
+      new THREE.Vector3(mBase[0], 3, mBase[2]),
+      new THREE.Vector3(midX, 5, mBase[2]),
+      new THREE.Vector3(midX, 5, midZ),
+      new THREE.Vector3(sBase[0], 3, midZ),
+      new THREE.Vector3(sBase[0], 3, sBase[2]),
     ],
   ];
 }
@@ -56,7 +56,7 @@ export const PipelineSystem: React.FC = () => {
           key={key}
           points={points}
           color="#475569"
-          lineWidth={4}
+          lineWidth={6}
           transparent
           opacity={0.7}
         />
@@ -66,7 +66,7 @@ export const PipelineSystem: React.FC = () => {
       {pipeLines.flatMap(({ key, points }) =>
         points.map((pt, i) => (
           <mesh key={`${key}-joint-${i}`} position={pt}>
-            <sphereGeometry args={[0.8, 8, 8]} />
+            <sphereGeometry args={[1.5, 8, 8]} />
             <meshStandardMaterial
               color="#334155"
               roughness={0.3}
