@@ -26,7 +26,7 @@ export interface Renderable {
   fontWeight?: string;
   fontSize?: number;
   text?: string;
-  textAnchor?: string;
+  textAnchor?: 'start' | 'middle' | 'end' | 'inherit';
   fontFamily?: string;
   className?: string;
 }
