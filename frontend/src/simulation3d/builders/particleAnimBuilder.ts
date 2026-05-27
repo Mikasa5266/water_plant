@@ -1,13 +1,13 @@
 import type { Camera3D, Renderable } from '../utils/geometry3d';
 import { mathProj } from '../utils/geometry3d';
-import type { AgentId, ActiveAnimation } from '../../types';
+import type { AgentId, ActiveAnimation } from '../../types/index';
 import { PARTICLE_ANIM_COORDS } from '../../data/constants';
 
 function getParticleColor(agentId: AgentId): string {
   if (agentId === 'dosing') return '#fbbf24';
   if (agentId === 'uf') return '#22d3ee';
-  if (agentId === 'membrane') return '#10b981';
-  if (agentId === 'master') return '#a855f7';
+  if (agentId === 'ro') return '#10b981';
+  if (agentId === 'supervisor') return '#a855f7';
   return '#14b8a6';
 }
 

@@ -1,6 +1,6 @@
 import type { Camera3D, Renderable } from '../utils/geometry3d';
 import { helperPipeline } from '../utils/geometry3d';
-import type { AnomalySimulation } from '../../types';
+import type { AnomalySimulation } from '../../types/index';
 import { PIPE_PATHS } from '../../data/constants';
 
 export function buildPipelines(camera: Camera3D, animationTick: number, simulation: AnomalySimulation): Renderable[] {
@@ -19,7 +19,7 @@ export function buildPipelines(camera: Camera3D, animationTick: number, simulati
   const isUfClogged = simulation.active && simulation.type === 'uf_clogging' && simulation.step >= 1 && simulation.step < 7;
   helperPipeline(PIPE_PATHS.uf, '#064e3b', isUfClogged ? '#f97316' : '#10b981', 4.5, 0.95, camera, animationTick, list);
 
-  helperPipeline(PIPE_PATHS.membrane, '#064e3b', '#10b981', 5, 1.3, camera, animationTick, list);
+  helperPipeline(PIPE_PATHS.ro, '#064e3b', '#10b981', 5, 1.3, camera, animationTick, list);
 
   return list;
 }

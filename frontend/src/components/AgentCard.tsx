@@ -1,6 +1,6 @@
 import React from 'react';
 import { SlidersHorizontal, X, Droplet, Activity, Waves } from 'lucide-react';
-import { AgentId, AgentData, CardState, AgentLog, TelemetryState } from '../types';
+import { AgentId, AgentData, CardState, AgentLog, TelemetryState } from '../types/index';
 
 interface AgentCardProps {
   id: AgentId;
@@ -156,28 +156,28 @@ export const AgentCard: React.FC<AgentCardProps> = ({
               </div>
             )}
 
-            {id === 'membrane' && (
+            {id === 'ro' && (
               <div className="space-y-1">
                 <div className="flex justify-between items-center text-[11px]">
                   <span className="text-slate-400 flex items-center gap-1">
                     <Waves className="w-3 h-3 text-emerald-400" />
                     精滤膜瞬时通量
                   </span>
-                  <span className="text-emerald-400 font-mono font-semibold">{telemetry.membraneFlux} LMH</span>
+                  <span className="text-emerald-400 font-mono font-semibold">{telemetry.roFlux} LMH</span>
                 </div>
                 <input 
                   type="range" 
                   min="30.0" 
                   max="100.0" 
                   step="0.5"
-                  value={telemetry.membraneFlux} 
-                  onChange={(e) => setTelemetry(prev => ({ ...prev, membraneFlux: parseFloat(e.target.value) }))}
+                  value={telemetry.roFlux} 
+                  onChange={(e) => setTelemetry(prev => ({ ...prev, roFlux: parseFloat(e.target.value) }))}
                   className="w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-teal-400"
                 />
               </div>
             )}
 
-            {id === 'master' && (
+            {id === 'supervisor' && (
               <div className="space-y-1">
                 <div className="flex justify-between items-center text-[11px]">
                   <span className="text-slate-400">总管工艺在线保障</span>
@@ -200,7 +200,7 @@ export const AgentCard: React.FC<AgentCardProps> = ({
               <div>
                 <span className="text-slate-500 block">节点耗电比</span>
                 <span className="text-slate-300 font-mono">
-                  {(telemetry.energyConsumption * (id === 'membrane' ? 1.5 : id === 'uf' ? 1.2 : 0.8)).toFixed(3)} kW/m³
+                  {(telemetry.energyConsumption * (id === 'ro' ? 1.5 : id === 'uf' ? 1.2 : 0.8)).toFixed(3)} kW/m³
                 </span>
               </div>
               <div>

@@ -1,6 +1,6 @@
 import React, { useRef, useState } from 'react';
 import { HelpCircle } from 'lucide-react';
-import type { TelemetryState, AnomalySimulation, AgentId, CardState, AgentData, ActiveAnimation } from '../types';
+import type { TelemetryState, AnomalySimulation, AgentId, CardState, AgentData, ActiveAnimation } from '../types/index';
 import { INITIAL_AGENTS_DATA } from '../data/initialAgents';
 import { SceneRenderer } from '../simulation3d/SceneRenderer';
 import { AgentBadges } from '../simulation3d/AgentBadges';
@@ -38,10 +38,10 @@ export const WaterPlantCanvas3D: React.FC<WaterPlantCanvas3DProps> = ({
   const cameraDragStartRef = useRef({ x: 0, y: 0, yaw: 0, pitch: 0 });
 
   const shouldIgnoreTarget = (target: HTMLElement) => !!(
-    target.closest('#agent-icon-g-master') ||
+    target.closest('#agent-icon-g-supervisor') ||
     target.closest('#agent-icon-g-dosing') ||
     target.closest('#agent-icon-g-uf') ||
-    target.closest('#agent-icon-g-membrane') ||
+    target.closest('#agent-icon-g-ro') ||
     target.closest('button') ||
     target.closest('[id^="floating-card-"]') ||
     target.closest('.cursor-pointer')

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Waves, Cpu, Gauge, RotateCcw, AlertTriangle } from 'lucide-react';
-import { AnomalySimulation, TelemetryState, AgentId, CardState } from '../types';
+import { AnomalySimulation, TelemetryState, AgentId, CardState } from '../types/index';
 
 interface HeaderHUDProps {
   simulation: AnomalySimulation;

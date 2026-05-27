@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
 import { Activity } from 'lucide-react';
-import type { TelemetryState } from '../types';
+import type { TelemetryState } from '../types/index';
 import { useAnimationLoop } from '../hooks/useAnimationLoop';
 import { useClock } from '../hooks/useClock';
 import { useAgentState } from '../features/agents/useAgentState';
@@ -22,10 +22,13 @@ export default function DashboardPage() {
     dosingRate: 4.8,
     chemicalLevel: 72,
     ufPressure: 82,
-    membraneFlux: 74.5,
+    roFlux: 74.5,
+    roConductivity: 18,
+    pumpCurrent: 28,
+    pumpTemperature: 55,
     energyConsumption: 0.22,
     healthScore: 98,
-    activeAgentsCount: 4,
+    activeAgentsCount: 5,
     onlineRate: 99.2
   });
 

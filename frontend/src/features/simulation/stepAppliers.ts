@@ -1,6 +1,6 @@
-import type { AgentId, AgentLog, TelemetryState } from '../../types';
+import type { AgentId, AgentLog, AgentStatusMap, TelemetryState } from '../../types/index';
 
-type StatusMap = Record<AgentId, 'idle' | 'monitoring' | 'processing' | 'warning'>;
+type StatusMap = AgentStatusMap;
 type LogMap = Record<AgentId, AgentLog[]>;
 type SetStr = (s: string) => void;
 type SetLogs = (l: string[]) => void;
@@ -37,21 +37,21 @@ export function applyDosingStep(
     case 3:
       setTitle('【步骤3/8】监管总管智能体工艺链深度归因分析');
       setDesc('总管智能体接管全链感知。比对投药模型与下级流速反馈，精准锁定原水突变与机械阀门设定偏差。');
-      aStatuses.master = 'warning';
-      aLogs.master = [
+      aStatuses.supervisor = 'warning';
+      aLogs.supervisor = [
         { id: `mast_${stamp}`, time: stamp, message: '诊断广播：加药工况突变。计算归因：原水强冲击复合投药阀门饱和。', type: 'warning' },
-        ...aLogs.master
+        ...aLogs.supervisor
       ];
       setPayload([...payloadLogs, '[总控智能体] 启动关联推演。判定故障点：阀体暂无物理卡阻，纯属药耗负载过低引起失稳。']);
       break;
     case 4:
       setTitle('【步骤4/8】协同联合调度与指令派发');
       setDesc('总管智能体下发自适应干预指令：指令加药智能体提升投加速率，并告诫后段超滤单元提前预备。');
-      aStatuses.master = 'processing';
+      aStatuses.supervisor = 'processing';
       aStatuses.uf = 'processing';
-      aLogs.master = [
+      aLogs.supervisor = [
         { id: `mast_${stamp}`, time: stamp, message: '派发控制链：指令【加药智能体】提高投加，通知【超滤】调大通量。', type: 'info' },
-        ...aLogs.master
+        ...aLogs.supervisor
       ];
       aLogs.uf = [
         { id: `uf_${stamp}`, time: stamp, message: '接收调度指令：预计浊度冲击5分钟后到达，做好变频过闸调节。', type: 'info' },
@@ -92,12 +92,12 @@ export function applyDosingStep(
       t.inletTurbidity = 18.5;
       t.outletTurbidity = 0.04;
       t.healthScore = 99;
-      aStatuses.master = 'monitoring';
+      aStatuses.supervisor = 'monitoring';
       aStatuses.dosing = 'monitoring';
       aStatuses.uf = 'monitoring';
-      aLogs.master = [
+      aLogs.supervisor = [
         { id: `mast_${stamp}`, time: stamp, message: '水质跟踪显示浊度完全脱困。智能体联勤网络变回常态巡视阶段。', type: 'success' },
-        ...aLogs.master
+        ...aLogs.supervisor
       ];
       aLogs.dosing = [
         { id: `dos_${stamp}`, time: stamp, message: '本轮混凝极值波动处置结束。过程药剂配比完美命中。', type: 'success' },
@@ -134,17 +134,17 @@ export function applyUfStep(
     case 3:
       setTitle('【步骤3/8】监管总管启动全拓扑联合诊断');
       setDesc('总管智能体整合工艺链路，发觉由于前期大颗粒穿透，引起超滤微通道局部堵塞。排除设备损坏，下发反洗调度。');
-      aStatuses.master = 'warning';
-      aLogs.master = [
+      aStatuses.supervisor = 'warning';
+      aLogs.supervisor = [
         { id: `mast_${stamp}`, time: stamp, message: '分析结论：非泵机故障。应通过临时逆流脉冲反洗清理超滤A膜。', type: 'warning' },
-        ...aLogs.master
+        ...aLogs.supervisor
       ];
       setPayload([...payloadLogs, '[主管大脑] 进行工况拟合，证实为高杂质负荷吸附。触发针对性"逆流水气充能反洗"最优推算。']);
       break;
     case 4:
       setTitle('【步骤4/8】协调反洗任务下发与过流切换');
       setDesc('总管调度超滤单元关闭A管，切换流量载荷至B、C超滤常态组，确保全厂产水量无瞬态流失。');
-      aStatuses.master = 'processing';
+      aStatuses.supervisor = 'processing';
       aStatuses.uf = 'processing';
       t.outletFlow = 1180;
       aLogs.uf = [
@@ -184,11 +184,11 @@ export function applyUfStep(
       t.ufPressure = 82;
       t.outletFlow = 1210;
       t.healthScore = 98;
-      aStatuses.master = 'monitoring';
+      aStatuses.supervisor = 'monitoring';
       aStatuses.uf = 'monitoring';
-      aLogs.master = [
+      aLogs.supervisor = [
         { id: `mast_${stamp}`, time: stamp, message: '超滤阻力异常故障修复，总管智能体切换全厂为低碳巡航模式。', type: 'success' },
-        ...aLogs.master
+        ...aLogs.supervisor
       ];
       aLogs.uf = [
         { id: `uf_${stamp}`, time: stamp, message: '跨膜压差重置：82 kPa！超滤柱通导重回最优。', type: 'success' },
@@ -199,7 +199,7 @@ export function applyUfStep(
   }
 }
 
-export function applyMembraneStep(
+export function applyRoStep(
   step: number, stamp: string,
   t: TelemetryState, aStatuses: StatusMap, aLogs: LogMap, payloadLogs: string[],
   setTitle: SetStr, setDesc: SetStr, setPayload: SetLogs
@@ -208,15 +208,15 @@ export function applyMembraneStep(
     case 1:
       setTitle('【步骤1/8】膜组件衰减：产水通量滑落');
       setDesc('右侧高精膜区产水通量降至临界 45 LMH（额定 75 LMH）。系统能耗上升，膜组件出现浓化失衡迹象。');
-      t.membraneFlux = 45;
+      t.roFlux = 45;
       t.healthScore = 78;
       t.energyConsumption = 0.28;
-      aStatuses.membrane = 'warning';
-      aLogs.membrane = [
-        { id: `memb_${stamp}`, time: stamp, message: '能效警告：终端膜区产水通量暴跌至 45 LMH，泵功耗升高！', type: 'warning' },
-        ...aLogs.membrane
+      aStatuses.ro = 'warning';
+      aLogs.ro = [
+        { id: `ro_${stamp}`, time: stamp, message: '能效警告：RO 产水通量暴跌至 45 LMH，泵功耗升高！', type: 'warning' },
+        ...aLogs.ro
       ];
-      setPayload(['[工艺警报] 终端膜过滤区域产生有机沉淀物极化，膜通量滑落超25%。', '[膜智能体] 捕捉产水通道能效转换指数下滑。']);
+      setPayload(['[工艺警报] RO 过滤区域产生有机沉淀物极化，产水通量滑落超25%。', '[反渗透智能体] 捕捉产水通道能效转换指数下滑。']);
       break;
     case 2:
       setTitle('【步骤2/8】感知探针工艺谱分析并上送中心');
@@ -226,34 +226,34 @@ export function applyMembraneStep(
     case 3:
       setTitle('【步骤3/8】监管总控制定自校正能效方案');
       setDesc('监管总管通过分析，决策不需整机停开机，而是通过在线瞬时提升错流流速并调整出水侧阻尼阀。');
-      aStatuses.master = 'warning';
-      aLogs.master = [
+      aStatuses.supervisor = 'warning';
+      aLogs.supervisor = [
         { id: `mast_${stamp}`, time: stamp, message: '诊断广播：终端极化过载。推荐调高泵流速 + 出泥扫尾。', type: 'warning' },
-        ...aLogs.master
+        ...aLogs.supervisor
       ];
       setPayload([...payloadLogs, '[架构推演] 为避免深度堵塞，主管命令：对膜丝表面剪切力变频倍率提升 1.5 倍。']);
       break;
     case 4:
       setTitle('【步骤4/8】协同变压清洗并下发调度指令');
       setDesc('调度出水压力侧变频调校，并提示前置超滤智能体配合降低前端粗水阀，保护膜丝应力分布。');
-      aStatuses.master = 'processing';
-      aStatuses.membrane = 'processing';
-      aLogs.master = [
+      aStatuses.supervisor = 'processing';
+      aStatuses.ro = 'processing';
+      aLogs.supervisor = [
         { id: `mast_${stamp}`, time: stamp, message: '派发调度链：降低超滤排量 5%，提振膜区底压冲刷层。', type: 'info' },
-        ...aLogs.master
+        ...aLogs.supervisor
       ];
-      aLogs.membrane = [
-        { id: `memb_${stamp}`, time: stamp, message: '接授命令，调升循环错流泵。膜丝自清洁阀完全启动。', type: 'info' },
-        ...aLogs.membrane
+      aLogs.ro = [
+        { id: `ro_${stamp}`, time: stamp, message: '接授命令，调升循环错流泵。RO 自清洁阀完全启动。', type: 'info' },
+        ...aLogs.ro
       ];
       setPayload([...payloadLogs, '[任务派发] 发起精细膜保护错流清洗指令，全流程联动。']);
       break;
     case 5:
       setTitle('【步骤5/8】两相错流剪切清洗曲线推算');
-      setDesc('膜智能体自适应获取洗流流速，设定"增压泵调频至48Hz，自剪力层水力冲击 1.25 m/s"的三级冲洗工艺。');
-      aLogs.membrane = [
-        { id: `memb_${stamp}`, time: stamp, message: '方案生成：循环冲刷流量 12.5 m³/s 错流高风清洗。', type: 'info' },
-        ...aLogs.membrane
+      setDesc('反渗透智能体自适应获取洗流流速，设定"增压泵调频至48Hz，自剪力层水力冲击 1.25 m/s"的三级冲洗工艺。');
+      aLogs.ro = [
+        { id: `ro_${stamp}`, time: stamp, message: '方案生成：循环冲刷流量 12.5 m³/s 错流高风清洗。', type: 'info' },
+        ...aLogs.ro
       ];
       setPayload([...payloadLogs, '[模型寻优] 基于膜壁剪切阻抗矩阵算法，拟合出变压剪切冲刷路径。']);
       break;
@@ -265,28 +265,28 @@ export function applyMembraneStep(
     case 7:
       setTitle('【步骤7/8】高压冲洗机构响应，析出淤积附着物');
       setDesc('错流循环泵输出激升，冲刷掉膜表面的矿物质微细附着体，浊度与电导度快速恢复一致。');
-      t.membraneFlux = 68;
-      aLogs.membrane = [
-        { id: `memb_${stamp}`, time: stamp, message: '现场反馈：电液循环错洗启动。极化结晶析出通畅，产水能力上升！', type: 'success' },
-        ...aLogs.membrane
+      t.roFlux = 68;
+      aLogs.ro = [
+        { id: `ro_${stamp}`, time: stamp, message: '现场反馈：电液循环错洗启动。极化结晶析出通畅，产水能力上升！', type: 'success' },
+        ...aLogs.ro
       ];
       setPayload([...payloadLogs, '[在线自洁] 精分孔错流剥离完成。浓缩物彻底回流排出。']);
       break;
     case 8:
       setTitle('【步骤8/8】产水通量完全回升，出水质量完美归拢');
       setDesc('最终末端膜通量跃升重回 75.2 LMH 峰值，单顿出水综合能耗重设为 0.18 kWh，警报全面解除。');
-      t.membraneFlux = 75.2;
+      t.roFlux = 75.2;
       t.energyConsumption = 0.18;
       t.healthScore = 98;
-      aStatuses.master = 'monitoring';
-      aStatuses.membrane = 'monitoring';
-      aLogs.master = [
+      aStatuses.supervisor = 'monitoring';
+      aStatuses.ro = 'monitoring';
+      aLogs.supervisor = [
         { id: `mast_${stamp}`, time: stamp, message: '膜通量自校正结束。全厂水力输出重回低耗静音状态。', type: 'success' },
-        ...aLogs.master
+        ...aLogs.supervisor
       ];
-      aLogs.membrane = [
-        { id: `memb_${stamp}`, time: stamp, message: '自洗完成，通量调校为 75.2 LMH 额定产水点。工艺健壮性 100%', type: 'success' },
-        ...aLogs.membrane
+      aLogs.ro = [
+        { id: `ro_${stamp}`, time: stamp, message: '自洗完成，通量调校为 75.2 LMH 额定产水点。工艺健壮性 100%', type: 'success' },
+        ...aLogs.ro
       ];
       setPayload([...payloadLogs, '[闭环收盘] 本轮极化自清洁阻力降幅 94.1%。成功规避强酸化学酸洗。']);
       break;

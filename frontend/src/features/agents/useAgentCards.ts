@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import type { AgentId, CardState } from '../../types';
+import type { AgentId, CardState } from '../../types/index';
 import { DEFAULT_CARDS } from '../../data/constants';
 
 export function useAgentCards(containerRef: React.RefObject<HTMLDivElement | null>) {

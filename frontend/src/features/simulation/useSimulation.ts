@@ -1,16 +1,16 @@
 import React, { useState, useEffect, useRef } from 'react';
-import type { AgentId, AgentLog, TelemetryState, AnomalySimulation, ActiveAnimation, CardState } from '../../types';
+import type { AgentId, AgentLog, AgentStatusMap, IncidentType, TelemetryState, AnomalySimulation, ActiveAnimation, CardState } from '../../types/index';
 import { getTimestamp } from '../../utils/format';
-import { getScenarioMeta, type ScenarioType } from './simulationScripts';
-import { applyDosingStep, applyUfStep, applyMembraneStep } from './stepAppliers';
+import { getScenarioMeta } from './simulationScripts';
+import { applyDosingStep, applyUfStep, applyRoStep } from './stepAppliers';
 
 interface UseSimulationDeps {
   animationTickRef: React.RefObject<number>;
   animationTick: number;
   telemetry: TelemetryState;
   setTelemetry: React.Dispatch<React.SetStateAction<TelemetryState>>;
-  agentStatuses: Record<AgentId, 'idle' | 'monitoring' | 'processing' | 'warning'>;
-  setAgentStatuses: React.Dispatch<React.SetStateAction<Record<AgentId, 'idle' | 'monitoring' | 'processing' | 'warning'>>>;
+  agentStatuses: AgentStatusMap;
+  setAgentStatuses: React.Dispatch<React.SetStateAction<AgentStatusMap>>;
   agentLogs: Record<AgentId, AgentLog[]>;
   setAgentLogs: React.Dispatch<React.SetStateAction<Record<AgentId, AgentLog[]>>>;
   setCards: React.Dispatch<React.SetStateAction<Record<AgentId, CardState>>>;
@@ -50,13 +50,14 @@ export function useSimulation(deps: UseSimulationDeps) {
   useEffect(() => { agentStatusesRef.current = agentStatuses; }, [agentStatuses]);
   useEffect(() => { agentLogsRef.current = agentLogs; }, [agentLogs]);
 
-  const getActiveAgentForStep = (type: ScenarioType | null, step: number): AgentId => {
-    if (!type) return 'master';
-    if (step === 3 || step === 4) return 'master';
+  const getActiveAgentForStep = (type: IncidentType | null, step: number): AgentId => {
+    if (!type) return 'supervisor';
+    if (step === 3 || step === 4) return 'supervisor';
     if (type === 'dosing_abnormal') return 'dosing';
     if (type === 'uf_clogging') return 'uf';
-    if (type === 'membrane_decay') return 'membrane';
-    return 'master';
+    if (type === 'ro_fouling') return 'ro';
+    if (type === 'pump_overload') return 'pump';
+    return 'supervisor';
   };
 
   const triggerCalibrationAnimation = (agentId: AgentId) => {
@@ -82,8 +83,8 @@ export function useSimulation(deps: UseSimulationDeps) {
       const copy = { ...prev };
       if (agentId === 'dosing') { copy.dosingRate = 4.8; copy.chemicalLevel = Math.min(copy.chemicalLevel + 5, 100); }
       else if (agentId === 'uf') { copy.ufPressure = 82; }
-      else if (agentId === 'membrane') { copy.membraneFlux = 75.2; }
-      else if (agentId === 'master') { copy.healthScore = 98; copy.onlineRate = 99.5; }
+      else if (agentId === 'ro') { copy.roFlux = 75.2; }
+      else if (agentId === 'supervisor') { copy.healthScore = 98; copy.onlineRate = 99.5; }
       return copy;
     });
     setAgentStatuses(prev => ({ ...prev, [agentId]: 'processing' }));
@@ -121,8 +122,8 @@ export function useSimulation(deps: UseSimulationDeps) {
       applyDosingStep(targetStep, stamp, t, aStatuses, aLogs, payloadLogs, s => { stepTitle = s; }, s => { stepDesc = s; }, p => { payloadLogs = p; });
     } else if (sim.type === 'uf_clogging') {
       applyUfStep(targetStep, stamp, t, aStatuses, aLogs, payloadLogs, s => { stepTitle = s; }, s => { stepDesc = s; }, p => { payloadLogs = p; });
-    } else if (sim.type === 'membrane_decay') {
-      applyMembraneStep(targetStep, stamp, t, aStatuses, aLogs, payloadLogs, s => { stepTitle = s; }, s => { stepDesc = s; }, p => { payloadLogs = p; });
+    } else if (sim.type === 'ro_fouling') {
+      applyRoStep(targetStep, stamp, t, aStatuses, aLogs, payloadLogs, s => { stepTitle = s; }, s => { stepDesc = s; }, p => { payloadLogs = p; });
     }
 
     if (targetStep === 8) setIsPlaying(false);
@@ -169,7 +170,7 @@ export function useSimulation(deps: UseSimulationDeps) {
     return () => clearInterval(interval);
   }, [isPlaying, simulation.active]);
 
-  const triggerSimulationIncident = (incidentType: ScenarioType) => {
+  const triggerSimulationIncident = (incidentType: IncidentType) => {
     const meta = getScenarioMeta(incidentType);
     setSimulation({
       active: true,
@@ -192,11 +193,12 @@ export function useSimulation(deps: UseSimulationDeps) {
       inletFlow: 1240, outletFlow: 1210,
       inletTurbidity: 18.5, outletTurbidity: 0.04,
       dosingRate: 4.8, chemicalLevel: 72,
-      ufPressure: 82, membraneFlux: 75.2,
+      ufPressure: 82, roFlux: 75.2,
+      roConductivity: 18, pumpCurrent: 28, pumpTemperature: 55,
       energyConsumption: 0.22, healthScore: 98,
-      activeAgentsCount: 4, onlineRate: 99.2
+      activeAgentsCount: 5, onlineRate: 99.2
     });
-    setAgentStatuses({ master: 'monitoring', dosing: 'monitoring', uf: 'monitoring', membrane: 'monitoring' });
+    setAgentStatuses({ supervisor: 'monitoring', dosing: 'monitoring', uf: 'monitoring', ro: 'monitoring', pump: 'monitoring' });
     setSimulation({
       active: false, type: null, step: 0,
       title: '系统状态良好',
@@ -204,10 +206,11 @@ export function useSimulation(deps: UseSimulationDeps) {
       logs: ['系统运行自检完毕：通信链路畅通，分布式控制响应 < 5ms。', '全系统多点监测参数已锚定，运行状态已同步。']
     });
     setCards({
-      master: { x: 50, y: 15, isOpen: false, zIndex: 10 },
+      supervisor: { x: 50, y: 15, isOpen: false, zIndex: 10 },
       dosing: { x: 12, y: 38, isOpen: false, zIndex: 10 },
       uf: { x: 35, y: 55, isOpen: false, zIndex: 10 },
-      membrane: { x: 62, y: 38, isOpen: false, zIndex: 10 }
+      ro: { x: 62, y: 38, isOpen: false, zIndex: 10 },
+      pump: { x: 70, y: 58, isOpen: false, zIndex: 10 }
     });
   };
 
