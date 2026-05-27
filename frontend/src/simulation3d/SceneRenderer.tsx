@@ -1,6 +1,6 @@
 import React from 'react';
 import type { Camera3D, Renderable } from './utils/geometry3d';
-import type { TelemetryState, AnomalySimulation, AgentId, CardState, ActiveAnimation } from '../types';
+import type { TelemetryState, AnomalySimulation, AgentId, CardState, ActiveAnimation } from '../types/index';
 import { buildGrid } from './builders/gridBuilder';
 import { buildPipelines } from './builders/pipelineBuilder';
 import { buildTanks } from './builders/tankBuilder';

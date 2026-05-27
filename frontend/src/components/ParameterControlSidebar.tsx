@@ -1,6 +1,6 @@
 import React from 'react';
 import { SlidersHorizontal } from 'lucide-react';
-import { TelemetryState } from '../types';
+import { TelemetryState } from '../types/index';
 
 interface ParameterControlSidebarProps {
   telemetry: TelemetryState;

@@ -1,27 +1,26 @@
-import type { AgentId, AgentLog, TelemetryState } from '../../types';
+import type { AgentId, AgentLog, AgentStatusMap, IncidentType, TelemetryState } from '../../types/index';
 
 export interface StepPayload {
   title: string;
   description: string;
   logs: string[];
   telemetryPatch?: Partial<TelemetryState>;
-  agentStatusPatch?: Partial<Record<AgentId, 'idle' | 'monitoring' | 'processing' | 'warning'>>;
+  agentStatusPatch?: Partial<AgentStatusMap>;
   agentLogsPatch?: Partial<Record<AgentId, AgentLog[]>>;
   stopPlaying?: boolean;
 }
 
-export type ScenarioType = 'dosing_abnormal' | 'uf_clogging' | 'ro_fouling';
-
-export function getActiveAgentForStep(type: ScenarioType | null, step: number): AgentId {
+export function getActiveAgentForStep(type: IncidentType | null, step: number): AgentId {
   if (!type) return 'supervisor';
   if (step === 3 || step === 4) return 'supervisor';
   if (type === 'dosing_abnormal') return 'dosing';
   if (type === 'uf_clogging') return 'uf';
   if (type === 'ro_fouling') return 'ro';
+  if (type === 'pump_overload') return 'pump';
   return 'supervisor';
 }
 
-export function getScenarioMeta(incidentType: ScenarioType): { title: string; detail: string } {
+export function getScenarioMeta(incidentType: IncidentType): { title: string; detail: string } {
   if (incidentType === 'dosing_abnormal') {
     return {
       title: '加药浓度过度偏低阻碍反应',

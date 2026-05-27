@@ -1,4 +1,4 @@
-import type { AgentId, CardState, AnomalySimulation } from '../types';
+import type { AgentId, CardState, AnomalySimulation } from '../types/index';
 
 export const DEFAULT_CARDS: Record<AgentId, CardState> = {
   supervisor: { x: 50, y: 15, isOpen: false, zIndex: 10 },

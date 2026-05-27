@@ -1,6 +1,6 @@
 import type { Camera3D, Renderable } from '../utils/geometry3d';
 import { mathProj } from '../utils/geometry3d';
-import type { AgentId, CardState } from '../../types';
+import type { AgentId, CardState } from '../../types/index';
 
 export function buildLaserLines(
   camera: Camera3D,

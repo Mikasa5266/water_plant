@@ -1,6 +1,6 @@
 import React from 'react';
 import { SlidersHorizontal, X, Droplet, Activity, Waves } from 'lucide-react';
-import { AgentId, AgentData, CardState, AgentLog, TelemetryState } from '../types';
+import { AgentId, AgentData, CardState, AgentLog, TelemetryState } from '../types/index';
 
 interface AgentCardProps {
   id: AgentId;

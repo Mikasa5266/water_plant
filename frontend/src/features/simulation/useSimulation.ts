@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
-import type { AgentId, AgentLog, TelemetryState, AnomalySimulation, ActiveAnimation, CardState } from '../../types';
+import type { AgentId, AgentLog, AgentStatusMap, IncidentType, TelemetryState, AnomalySimulation, ActiveAnimation, CardState } from '../../types/index';
 import { getTimestamp } from '../../utils/format';
-import { getScenarioMeta, type ScenarioType } from './simulationScripts';
+import { getScenarioMeta } from './simulationScripts';
 import { applyDosingStep, applyUfStep, applyRoStep } from './stepAppliers';
 
 interface UseSimulationDeps {
@@ -9,8 +9,8 @@ interface UseSimulationDeps {
   animationTick: number;
   telemetry: TelemetryState;
   setTelemetry: React.Dispatch<React.SetStateAction<TelemetryState>>;
-  agentStatuses: Record<AgentId, 'idle' | 'monitoring' | 'processing' | 'warning'>;
-  setAgentStatuses: React.Dispatch<React.SetStateAction<Record<AgentId, 'idle' | 'monitoring' | 'processing' | 'warning'>>>;
+  agentStatuses: AgentStatusMap;
+  setAgentStatuses: React.Dispatch<React.SetStateAction<AgentStatusMap>>;
   agentLogs: Record<AgentId, AgentLog[]>;
   setAgentLogs: React.Dispatch<React.SetStateAction<Record<AgentId, AgentLog[]>>>;
   setCards: React.Dispatch<React.SetStateAction<Record<AgentId, CardState>>>;
@@ -50,12 +50,13 @@ export function useSimulation(deps: UseSimulationDeps) {
   useEffect(() => { agentStatusesRef.current = agentStatuses; }, [agentStatuses]);
   useEffect(() => { agentLogsRef.current = agentLogs; }, [agentLogs]);
 
-  const getActiveAgentForStep = (type: ScenarioType | null, step: number): AgentId => {
+  const getActiveAgentForStep = (type: IncidentType | null, step: number): AgentId => {
     if (!type) return 'supervisor';
     if (step === 3 || step === 4) return 'supervisor';
     if (type === 'dosing_abnormal') return 'dosing';
     if (type === 'uf_clogging') return 'uf';
     if (type === 'ro_fouling') return 'ro';
+    if (type === 'pump_overload') return 'pump';
     return 'supervisor';
   };
 
@@ -169,7 +170,7 @@ export function useSimulation(deps: UseSimulationDeps) {
     return () => clearInterval(interval);
   }, [isPlaying, simulation.active]);
 
-  const triggerSimulationIncident = (incidentType: ScenarioType) => {
+  const triggerSimulationIncident = (incidentType: IncidentType) => {
     const meta = getScenarioMeta(incidentType);
     setSimulation({
       active: true,
