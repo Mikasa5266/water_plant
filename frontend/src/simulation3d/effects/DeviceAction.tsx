@@ -11,7 +11,7 @@ import { toThreePos } from '../utils/coordinates';
  * 当 phase 为 EXECUTING 或 DEVICE_OPERATING 时：
  * - 阀门手轮旋转
  * - 泵叶轮转动
- * 动画逻辑与几何体解耦，后续替换 .glb 模型时无需修改
+ * - 按 agentId 定位到真实设备坐标上方
  */
 export const DeviceAction: React.FC = () => {
   const phase = useScenarioStore((s) => s.phase);
@@ -27,11 +27,11 @@ const DeviceAnimator: React.FC<{ agentId: AgentId }> = ({ agentId }) => {
   const anchor = AGENT_3D_ANCHORS[agentId];
   const pos = toThreePos(anchor.x, anchor.y, anchor.z);
 
-  const valveRef = useRef<THREE.Group>(null);
-  const pumpRef = useRef<THREE.Mesh>(null);
+  const valveRef = useRef<THREE.Mesh>(null);
+  const pumpRef = useRef<THREE.Group>(null);
 
   useFrame((_, delta) => {
-    // 阀门旋转（慢速）
+    // 阀门手轮旋转（慢速）
     if (valveRef.current) {
       valveRef.current.rotation.y += delta * 1.5;
     }
@@ -44,8 +44,8 @@ const DeviceAnimator: React.FC<{ agentId: AgentId }> = ({ agentId }) => {
 
   return (
     <group position={[pos[0], 1.5, pos[2]]}>
-      {/* 阀门手轮旋转 */}
-      <group ref={valveRef} position={[4, 3, 3]}>
+      {/* 阀门手轮 — ✅ 正确的 R3F 结构：mesh → geometry + material */}
+      <mesh ref={valveRef} position={[4, 3, 3]}>
         <torusGeometry args={[2.0, 0.25, 8, 16]} />
         <meshStandardMaterial
           color="#f59e0b"
@@ -54,41 +54,44 @@ const DeviceAnimator: React.FC<{ agentId: AgentId }> = ({ agentId }) => {
           roughness={0.3}
           metalness={0.4}
         />
-      </group>
-
-      {/* 泵叶轮旋转 */}
-      <mesh ref={pumpRef} position={[0, 5, 0]}>
-        <torusGeometry args={[1.8, 0.4, 6, 24]} />
-        <meshStandardMaterial
-          color="#38bdf8"
-          emissive="#38bdf8"
-          emissiveIntensity={0.5}
-          roughness={0.2}
-          metalness={0.3}
-        />
       </mesh>
 
-      {/* 叶轮辐条 */}
-      {[0, Math.PI / 3, 2 * Math.PI / 3, Math.PI, 4 * Math.PI / 3, 5 * Math.PI / 3].map(
-        (angle, i) => (
-          <mesh
-            key={i}
-            position={[
-              Math.cos(angle) * 0.9,
-              5,
-              Math.sin(angle) * 0.9,
-            ]}
-            rotation={[0, 0, angle]}
-          >
-            <boxGeometry args={[1.8, 0.2, 0.2]} />
-            <meshStandardMaterial
-              color="#64748b"
-              roughness={0.3}
-              metalness={0.7}
-            />
-          </mesh>
-        ),
-      )}
+      {/* 泵叶轮组 — ✅ group 包含多个 mesh（叶轮 + 辐条） */}
+      <group ref={pumpRef} position={[0, 5, 0]}>
+        {/* 叶轮主体 */}
+        <mesh>
+          <torusGeometry args={[1.8, 0.4, 6, 24]} />
+          <meshStandardMaterial
+            color="#38bdf8"
+            emissive="#38bdf8"
+            emissiveIntensity={0.5}
+            roughness={0.2}
+            metalness={0.3}
+          />
+        </mesh>
+
+        {/* 叶轮辐条 */}
+        {[0, Math.PI / 3, 2 * Math.PI / 3, Math.PI, 4 * Math.PI / 3, 5 * Math.PI / 3].map(
+          (angle, i) => (
+            <mesh
+              key={i}
+              position={[
+                Math.cos(angle) * 0.9,
+                0,
+                Math.sin(angle) * 0.9,
+              ]}
+              rotation={[0, 0, angle]}
+            >
+              <boxGeometry args={[1.8, 0.2, 0.2]} />
+              <meshStandardMaterial
+                color="#64748b"
+                roughness={0.3}
+                metalness={0.7}
+              />
+            </mesh>
+          ),
+        )}
+      </group>
     </group>
   );
 };

@@ -32,6 +32,7 @@ export const Scene3D: React.FC<Scene3DProps> = ({ className }) => {
   return (
     <div className={className} style={{ width: '100%', height: '100%', minHeight: 480 }}>
       <Canvas
+        shadows
         gl={{
           antialias: true,
           alpha: false,

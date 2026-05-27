@@ -1,7 +1,7 @@
 import React, { useRef, useMemo } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
-import type { AgentId, AgentUIStatus } from '../../types';
+import type { AgentId, AgentRunStatus } from '../../types';
 import { AGENT_3D_ANCHORS } from '../../data/constants';
 import { useScenarioStore } from '../../stores/useScenarioStore';
 import { toThreePos } from '../utils/coordinates';
@@ -19,32 +19,35 @@ const AGENT_COLORS: Record<AgentId, string> = {
   pump: '#534AB7',
 };
 
-/** 根据 UI 四态 + 闪烁设备决定当前发光色 */
+/** 根据 Agent 运行状态 + 是否被闪烁设备 决定发光色 */
 function getAgentEmissive(
   agentId: AgentId,
-  uiStatus: AgentUIStatus,
-  deviceFlashing: AgentId | null,
+  runStatus: AgentRunStatus,
+  isFlashing: boolean,
 ): string {
-  if (deviceFlashing === agentId) return '#ef4444'; // 红闪
-  if (uiStatus === 'alarm') return '#f59e0b'; // 橙告警
-  if (uiStatus === 'recovering') return '#10b981'; // 绿恢复
+  if (isFlashing) return '#ef4444'; // 红闪
+  if (runStatus === 'warning') return '#f59e0b'; // 橙告警
+  if (runStatus === 'executing' || runStatus === 'processing') return '#10b981'; // 绿执行
+  if (runStatus === 'thinking') return '#60a5fa'; // 蓝分析中
   return AGENT_COLORS[agentId]; // 正常色
 }
 
 /**
  * 专项 Agent 发光球体
- * 悬浮于各自设备模块上方，颜色随 store 状态动态变化
+ * 悬浮于各自设备模块上方，颜色按 agentRunStatuses[agentId] 独立变化
  */
 export const AgentNode: React.FC<AgentNodeProps> = ({ agentId }) => {
   const anchor = AGENT_3D_ANCHORS[agentId];
   const pos = toThreePos(anchor.x, anchor.y, anchor.z);
 
-  const uiStatus = useScenarioStore((s) => s.agentUIStatus);
+  // 按 agentId 独立读取运行状态（不再是全局 agentUIStatus）
+  const runStatus = useScenarioStore((s) => s.agentRunStatuses[agentId]);
   const deviceFlashing = useScenarioStore((s) => s.deviceFlashing);
+  const isFlashing = deviceFlashing === agentId;
 
   const emissiveColor = useMemo(
-    () => getAgentEmissive(agentId, uiStatus, deviceFlashing),
-    [agentId, uiStatus, deviceFlashing],
+    () => getAgentEmissive(agentId, runStatus, isFlashing),
+    [agentId, runStatus, isFlashing],
   );
 
   const outerRef = useRef<THREE.Mesh>(null);
@@ -55,7 +58,7 @@ export const AgentNode: React.FC<AgentNodeProps> = ({ agentId }) => {
     const t = clock.getElapsedTime();
 
     if (outerRef.current) {
-      if (deviceFlashing === agentId) {
+      if (isFlashing) {
         // 快速脉冲闪烁
         const pulse = 0.7 + Math.abs(Math.sin(t * 8)) * 0.6;
         outerRef.current.scale.setScalar(pulse);
@@ -75,11 +78,11 @@ export const AgentNode: React.FC<AgentNodeProps> = ({ agentId }) => {
     <group position={pos}>
       {/* 外层发光球 */}
       <mesh ref={outerRef}>
-        <sphereGeometry args={[2.5, 32, 32]} />
+        <sphereGeometry args={[4.5, 32, 32]} />
         <meshStandardMaterial
           color={emissiveColor}
           emissive={emissiveColor}
-          emissiveIntensity={deviceFlashing === agentId ? 1.5 : 0.8}
+          emissiveIntensity={isFlashing ? 1.5 : 0.8}
           roughness={0.2}
           metalness={0.1}
           transparent
@@ -89,7 +92,7 @@ export const AgentNode: React.FC<AgentNodeProps> = ({ agentId }) => {
 
       {/* 内层核心球 */}
       <mesh ref={innerRef}>
-        <sphereGeometry args={[1.0, 32, 32]} />
+        <sphereGeometry args={[1.8, 32, 32]} />
         <meshStandardMaterial
           color="#ffffff"
           emissive={emissiveColor}

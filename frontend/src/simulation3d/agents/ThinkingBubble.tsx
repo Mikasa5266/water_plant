@@ -92,9 +92,26 @@ const ThinkingBubbleContent: React.FC<{
           cursor: 'pointer',
           backdropFilter: 'blur(8px)',
           boxShadow: '0 0 20px rgba(56, 189, 248, 0.15)',
+          position: 'relative',
         }}
         title="点击查看详情"
+        onClick={() => {
+          // 点击气泡可关闭（未来可扩展为打开详情窗口）
+          useScenarioStore.getState().clearThinking();
+        }}
       >
+        {/* ▼ 三角尾巴 */}
+        <div style={{
+          position: 'absolute',
+          bottom: -8,
+          left: '50%',
+          transform: 'translateX(-50%)',
+          width: 0,
+          height: 0,
+          borderLeft: '8px solid transparent',
+          borderRight: '8px solid transparent',
+          borderTop: '8px solid rgba(15, 23, 42, 0.95)',
+        }} />
         {/* 标题 */}
         <div style={{
           color: '#38bdf8',

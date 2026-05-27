@@ -1,21 +1,51 @@
 import React, { useMemo } from 'react';
 import * as THREE from 'three';
 import { Line } from '@react-three/drei';
-import { PIPE_PATHS } from '../../data/constants';
+import { AGENT_3D_ANCHORS } from '../../data/constants';
+import type { AgentId } from '../../types';
 import { toThreePos } from '../utils/coordinates';
 
 /**
- * 管道系统：静态管道连接监管中枢与各设备模块
- * 遍历 PIPE_PATHS 全局常量，用 drei/Line 渲染
+ * 监管中枢 + 4 模块的新拓扑管道
+ * 每个模块有多段管道连接到中枢
+ */
+const SPECIALISTS: AgentId[] = ['dosing', 'uf', 'ro', 'pump'];
+
+/**
+ * 为每个专项 Agent 生成连接中枢的管道路径
+ * 路径：模块侧边 → 中枢底座
+ */
+function buildModulePipes(agentId: AgentId): THREE.Vector3[][] {
+  const module = AGENT_3D_ANCHORS[agentId];
+  const supervisor = AGENT_3D_ANCHORS.supervisor;
+
+  const mBase = toThreePos(module.x, module.y, 15); // 模块地面高度
+  const sBase = toThreePos(supervisor.x, supervisor.y, 20); // 中枢底座
+
+  const midX = (mBase[0] + sBase[0]) / 2;
+  const midZ = (mBase[2] + sBase[2]) / 2;
+
+  // 三段式管道：模块 → 中间转折点 → 中枢
+  return [
+    [
+      new THREE.Vector3(mBase[0], 2, mBase[2]),
+      new THREE.Vector3(midX, 3, mBase[2]),
+      new THREE.Vector3(midX, 3, midZ),
+      new THREE.Vector3(sBase[0], 2, midZ),
+      new THREE.Vector3(sBase[0], 2, sBase[2]),
+    ],
+  ];
+}
+
+/**
+ * 管道系统：监管中枢 + 4 模块的新拓扑
+ * 每个模块通过管道连接到中央监管中枢
  */
 export const PipelineSystem: React.FC = () => {
-  // 预计算所有管道路径，避免每帧重建
   const pipeLines = useMemo(() => {
-    return Object.entries(PIPE_PATHS).map(([key, points]) => {
-      const threePoints = points.map((p) =>
-        new THREE.Vector3(...toThreePos(p.x, p.y, p.z)),
-      );
-      return { key, points: threePoints };
+    return SPECIALISTS.flatMap((id) => {
+      const paths = buildModulePipes(id);
+      return paths.map((points, i) => ({ key: `${id}-pipe-${i}`, points }));
     });
   }, []);
 
