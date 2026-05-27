@@ -4,6 +4,7 @@ import type { Camera3D } from './utils/geometry3d';
 import { mathProj } from './utils/geometry3d';
 import type { AgentId, AgentData, AgentStatusMap } from '../types/index';
 import { INITIAL_AGENTS_DATA } from '../data/initialAgents';
+import { AGENT_3D_ANCHORS } from '../data/constants';
 
 interface AgentBadgesProps {
   camera: Camera3D;
@@ -15,13 +16,12 @@ interface AgentBadgesProps {
 export const AgentBadges: React.FC<AgentBadgesProps> = ({
   camera, agentStatuses, cards, toggleAgentCard
 }) => {
-  const agentAnchors = {
-    supervisor: mathProj(20, -40, 110, camera),
-    dosing: mathProj(-180, -220, 95, camera),
-    uf: mathProj(50, 220, 85, camera),
-    ro: mathProj(280, 20, 100, camera),
-    pump: mathProj(200, 180, 90, camera)
-  };
+  const agentAnchors = Object.fromEntries(
+    Object.entries(AGENT_3D_ANCHORS).map(([id, anchor]) => [
+      id,
+      mathProj(anchor.x, anchor.y, anchor.z, camera)
+    ])
+  ) as Record<AgentId, ReturnType<typeof mathProj>>;
 
   return (
     <>
