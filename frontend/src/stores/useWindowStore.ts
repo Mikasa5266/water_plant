@@ -103,7 +103,7 @@ export const useWindowStore = create<WindowManagerState & WindowManagerActions>(
     set({
       windows: {
         ...windows,
-        [agentId]: { ...windows[agentId], isMinimized: false, zIndex: newZ },
+        [agentId]: { ...windows[agentId], isOpen: true, isMinimized: false, zIndex: newZ },
       },
       activeWindowId: agentId,
       maxZIndex: newZ,
@@ -112,11 +112,13 @@ export const useWindowStore = create<WindowManagerState & WindowManagerActions>(
 
   focusWindow: (agentId) => {
     const { windows, maxZIndex } = get();
+    if (!windows[agentId].isOpen) return;
+
     const newZ = maxZIndex + 1;
     set({
       windows: {
         ...windows,
-        [agentId]: { ...windows[agentId], zIndex: newZ },
+        [agentId]: { ...windows[agentId], isMinimized: false, zIndex: newZ },
       },
       activeWindowId: agentId,
       maxZIndex: newZ,
