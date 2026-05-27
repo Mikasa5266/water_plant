@@ -11,7 +11,7 @@ interface GroundProps {
  * 地面：半透明平面 + 参考网格
  * 网格中心位于世界原点，充当水厂场景的地面参照
  */
-export const Ground: React.FC<GroundProps> = ({ radius = 800, divisions = 60 }) => {
+export const Ground: React.FC<GroundProps> = ({ radius = 300, divisions = 30 }) => {
   return (
     <group>
       {/* 半透明基底面 */}

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Html } from '@react-three/drei';
 import { useScenarioStore } from '../../stores/useScenarioStore';
 import { AGENT_3D_ANCHORS } from '../../data/constants';
+import { SCENE_SCALE } from '../config';
 import type { AgentId, ThinkingContent } from '../../types';
 import { toThreePos } from '../utils/coordinates';
 
@@ -74,7 +75,7 @@ const ThinkingBubbleContent: React.FC<{
     <Html
       position={bubblePos}
       center
-      distanceFactor={15}
+      distanceFactor={15 * SCENE_SCALE}
     >
       <div
         style={{

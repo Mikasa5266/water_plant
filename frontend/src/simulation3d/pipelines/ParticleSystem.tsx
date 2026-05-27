@@ -3,6 +3,7 @@ import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { useScenarioStore } from '../../stores/useScenarioStore';
 import { AGENT_3D_ANCHORS } from '../../data/constants';
+import { DEVICE_CENTERS } from '../config';
 import type { ParticleIntent, AgentId } from '../../types';
 import { toThreePosTuple } from '../utils/coordinates';
 
@@ -68,65 +69,79 @@ function makeGlowMaterial(color: string, opacity: number): THREE.ShaderMaterial 
 }
 
 /**
- * 获取设备底部坐标（data 空间，z 压低到地面）
+ * 获取设备底部坐标（data 空间）
+ * 从 DEVICE_CENTERS 读取设备中心，z 值降低到地面
  */
 function getDevicePos(agentId: AgentId): { x: number; y: number; z: number } {
-  const a = AGENT_3D_ANCHORS[agentId];
-  return { x: a.x, y: a.y, z: 10 };
+  const center = DEVICE_CENTERS[agentId];
+  return { x: center.x, y: center.y, z: 2 };
 }
 
 /**
- * 获取中枢底部坐标（data 空间）
+ * 获取监管中枢本体中心坐标（data 空间）
+ * 从 DEVICE_CENTERS 读取，而非 AGENT_3D_ANCHORS（球体悬浮高度）
  */
-function getSupervisorBase(): { x: number; y: number; z: number } {
-  const a = AGENT_3D_ANCHORS.supervisor;
-  return { x: a.x, y: a.y, z: 20 };
+function getSupervisorCenter(): { x: number; y: number; z: number } {
+  return DEVICE_CENTERS.supervisor;
 }
 
 /**
  * 根据 intent 和目标 agent 生成三段式粒子路径
+ * anomaly: 设备 → (弧线) → 监管中枢本体
+ * dispatch: 监管中枢本体 → (弧线) → Agent 球体
+ * execute: Agent 球体 → (弧线) → 设备
  */
 function buildPath(intent: ParticleIntent, targetAgentId: AgentId): THREE.Vector3[] {
   const agent = AGENT_3D_ANCHORS[targetAgentId];
-  const supervisor = AGENT_3D_ANCHORS.supervisor;
+  const supervisorCenter = getSupervisorCenter();
   const device = getDevicePos(targetAgentId);
-  const supervisorBase = getSupervisorBase();
 
   const agentPos = toThreePosTuple(agent);
-  const supervisorPos = toThreePosTuple(supervisor);
+  const supervisorCenterPos = toThreePosTuple(supervisorCenter);
   const devicePos = toThreePosTuple(device);
-  const supervisorBasePos = toThreePosTuple(supervisorBase);
 
   switch (intent) {
     case 'anomaly': {
+      // 设备 → 监管中枢本体中心
       const mid = new THREE.Vector3(
-        (devicePos[0] + supervisorBasePos[0]) / 2,
-        (devicePos[1] + supervisorBasePos[1]) / 2 + 40,
-        (devicePos[2] + supervisorBasePos[2]) / 2,
+        (devicePos[0] + supervisorCenterPos[0]) / 2,
+        Math.max(devicePos[1], supervisorCenterPos[1]) + 25,
+        (devicePos[2] + supervisorCenterPos[2]) / 2,
       );
       return [
         new THREE.Vector3(...devicePos),
         mid,
-        new THREE.Vector3(...supervisorPos),
+        new THREE.Vector3(...supervisorCenterPos),
       ];
     }
     case 'dispatch': {
+      // 监管中枢本体中心 → Agent 球体
       const mid = new THREE.Vector3(
-        (supervisorPos[0] + agentPos[0]) / 2,
-        (supervisorPos[1] + agentPos[1]) / 2 + 45,
-        (supervisorPos[2] + agentPos[2]) / 2,
+        (supervisorCenterPos[0] + agentPos[0]) / 2,
+        Math.max(supervisorCenterPos[1], agentPos[1]) + 25,
+        (supervisorCenterPos[2] + agentPos[2]) / 2,
       );
       return [
-        new THREE.Vector3(...supervisorPos),
+        new THREE.Vector3(...supervisorCenterPos),
         mid,
         new THREE.Vector3(...agentPos),
       ];
     }
     case 'execute': {
+      // Agent 球体 → 设备（侧向弧线，避免穿透球体）
+      // Agent 和设备的 x/y 几乎重合，垂直弧线会穿透球体
+      // 改为侧向偏移：沿垂直于飞行方向的侧边弧线飞行
+      const dx = agentPos[0] - devicePos[0];
+      const dz = agentPos[2] - devicePos[2];
+      const horizontalDist = Math.sqrt(dx * dx + dz * dz);
+      // 侧向偏移方向（垂直于飞行方向的水平分量）
+      const perpX = horizontalDist > 0.1 ? -dz / horizontalDist : 1;
+      const perpZ = horizontalDist > 0.1 ? dx / horizontalDist : 0;
+      const lateralOffset = 25; // 侧向弧线幅度
       const mid = new THREE.Vector3(
-        (agentPos[0] + devicePos[0]) / 2,
-        (agentPos[1] + devicePos[1]) / 2 + 20,
-        (agentPos[2] + devicePos[2]) / 2,
+        (agentPos[0] + devicePos[0]) / 2 + perpX * lateralOffset,
+        (agentPos[1] + devicePos[1]) / 2,
+        (agentPos[2] + devicePos[2]) / 2 + perpZ * lateralOffset,
       );
       return [
         new THREE.Vector3(...agentPos),
@@ -139,11 +154,12 @@ function buildPath(intent: ParticleIntent, targetAgentId: AgentId): THREE.Vector
 
 /**
  * 生成 idle 背景粒子路径
+ * 路径：监管中枢中心 → 各 Agent 球体（环绕巡检）
  */
 function buildIdlePaths(): THREE.Vector3[] {
   const agents: AgentId[] = ['dosing', 'uf', 'ro', 'pump'];
-  const supervisor = AGENT_3D_ANCHORS.supervisor;
-  const supervisorPos = toThreePosTuple(supervisor);
+  const supervisorCenter = getSupervisorCenter();
+  const supervisorPos = toThreePosTuple(supervisorCenter);
 
   const waypoints: THREE.Vector3[] = [new THREE.Vector3(...supervisorPos)];
 
@@ -152,7 +168,7 @@ function buildIdlePaths(): THREE.Vector3[] {
     const ap = toThreePosTuple(a);
     waypoints.push(new THREE.Vector3(
       (supervisorPos[0] + ap[0]) / 2,
-      Math.max(supervisorPos[1], ap[1]) + 25,
+      Math.max(supervisorPos[1], ap[1]) + 15,
       (supervisorPos[2] + ap[2]) / 2,
     ));
     waypoints.push(new THREE.Vector3(...ap));

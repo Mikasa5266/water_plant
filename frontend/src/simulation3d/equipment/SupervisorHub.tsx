@@ -44,14 +44,14 @@ export const SupervisorHub: React.FC<SupervisorHubProps> = () => {
   return (
     <group position={[pos[0], groundY, pos[2]]}>
       {/* 底座 */}
-      <mesh position={[0, 0.9, 0]} castShadow receiveShadow>
-        <cylinderGeometry args={[18, 19.8, 2.2, 32]} />
+      <mesh position={[0, 0.5, 0]} castShadow receiveShadow>
+        <cylinderGeometry args={[10, 11, 1.2, 32]} />
         <meshStandardMaterial color="#1e3a5f" metalness={0.6} roughness={0.4} />
       </mesh>
 
       {/* 主体圆柱 */}
-      <mesh position={[0, 21.6, 0]} castShadow>
-        <cylinderGeometry args={[14.4, 16.2, 36, 32]} />
+      <mesh position={[0, 12, 0]} castShadow>
+        <cylinderGeometry args={[8, 9, 20, 32]} />
         <meshStandardMaterial
           color="#378ADD"
           emissive="#378ADD"
@@ -64,14 +64,14 @@ export const SupervisorHub: React.FC<SupervisorHubProps> = () => {
       </mesh>
 
       {/* 内部线框 */}
-      <mesh position={[0, 21.6, 0]}>
-        <cylinderGeometry args={[13.5, 15.3, 32.4, 32]} />
+      <mesh position={[0, 12, 0]}>
+        <cylinderGeometry args={[7.5, 8.5, 18, 32]} />
         <meshBasicMaterial color="#5ba0f5" wireframe transparent opacity={0.15} />
       </mesh>
 
       {/* 顶部发光核心球 */}
-      <mesh position={[0, 40.5, 0]}>
-        <sphereGeometry args={[4, 32, 32]} />
+      <mesh position={[0, 22.5, 0]}>
+        <sphereGeometry args={[2.2, 32, 32]} />
         <meshStandardMaterial
           color="#ffffff"
           emissive="#378ADD"
@@ -81,8 +81,8 @@ export const SupervisorHub: React.FC<SupervisorHubProps> = () => {
       </mesh>
 
       {/* 旋转光环 torus */}
-      <mesh ref={torusRef} position={[0, 25.2, 0]}>
-        <torusGeometry args={[21.6, 1.3, 16, 64]} />
+      <mesh ref={torusRef} position={[0, 14, 0]}>
+        <torusGeometry args={[12, 0.7, 16, 64]} />
         <meshStandardMaterial
           color="#60a5fa"
           emissive="#378ADD"
@@ -93,8 +93,8 @@ export const SupervisorHub: React.FC<SupervisorHubProps> = () => {
       </mesh>
 
       {/* 第二层光环（反向旋转） */}
-      <mesh ref={innerTorusRef} position={[0, 14.4, 0]} rotation={[Math.PI / 6, 0, Math.PI / 3]}>
-        <torusGeometry args={[18.9, 0.9, 16, 48]} />
+      <mesh ref={innerTorusRef} position={[0, 8, 0]} rotation={[Math.PI / 6, 0, Math.PI / 3]}>
+        <torusGeometry args={[10.5, 0.5, 16, 48]} />
         <meshStandardMaterial
           color="#93c5fd"
           emissive="#378ADD"
