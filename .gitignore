@@ -48,6 +48,7 @@ Thumbs.db
 *.njsproj
 *.sln
 *.sw?
+.workbuddy/*
 
 # TypeScript / Vite
 *.tsbuildinfo

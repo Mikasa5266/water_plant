@@ -1,11 +1,9 @@
-import React, { useRef, useState } from 'react';
+import React from 'react';
 import { HelpCircle } from 'lucide-react';
 import type { TelemetryState, AnomalySimulation, AgentId, CardState, AgentData, ActiveAnimation } from '../types/index';
 import { INITIAL_AGENTS_DATA } from '../data/initialAgents';
-import { SceneRenderer } from '../simulation3d/SceneRenderer';
-import { AgentBadges } from '../simulation3d/AgentBadges';
+import { Scene3D } from '../simulation3d/Scene3D';
 import { AgentCard } from './AgentCard';
-import { SVG_DEFS } from '../simulation3d/SvgDefs';
 
 interface WaterPlantCanvas3DProps {
   containerRef: React.RefObject<HTMLDivElement>;
@@ -34,64 +32,6 @@ export const WaterPlantCanvas3D: React.FC<WaterPlantCanvas3DProps> = ({
   toggleAgentCard, handleStartDrag, setAgentLogs,
   activeTab, activeAnim, triggerCalibrationAnimation
 }) => {
-  const [isDraggingCamera, setIsDraggingCamera] = useState(false);
-  const cameraDragStartRef = useRef({ x: 0, y: 0, yaw: 0, pitch: 0 });
-
-  const shouldIgnoreTarget = (target: HTMLElement) => !!(
-    target.closest('#agent-icon-g-supervisor') ||
-    target.closest('#agent-icon-g-dosing') ||
-    target.closest('#agent-icon-g-uf') ||
-    target.closest('#agent-icon-g-ro') ||
-    target.closest('button') ||
-    target.closest('[id^="floating-card-"]') ||
-    target.closest('.cursor-pointer')
-  );
-
-  const handleMouseDown = (e: React.MouseEvent) => {
-    if (shouldIgnoreTarget(e.target as HTMLElement)) return;
-    setIsDraggingCamera(true);
-    cameraDragStartRef.current = { x: e.clientX, y: e.clientY, yaw: camera.yaw, pitch: camera.pitch };
-  };
-
-  const handleMouseMove = (e: React.MouseEvent) => {
-    if (!isDraggingCamera) return;
-    const dx = e.clientX - cameraDragStartRef.current.x;
-    const dy = e.clientY - cameraDragStartRef.current.y;
-    setCamera(prev => ({
-      ...prev,
-      yaw: (cameraDragStartRef.current.yaw + dx * 0.4) % 360,
-      pitch: Math.max(15, Math.min(80, cameraDragStartRef.current.pitch + dy * 0.4))
-    }));
-  };
-
-  const handleMouseUp = () => { setIsDraggingCamera(false); };
-
-  const handleWheel = (e: React.WheelEvent) => {
-    const direction = e.deltaY < 0 ? 1 : -1;
-    setCamera(prev => ({
-      ...prev,
-      zoom: parseFloat(Math.max(0.4, Math.min(3.0, prev.zoom + direction * 0.05)).toFixed(2))
-    }));
-  };
-
-  const handleTouchStart = (e: React.TouchEvent) => {
-    if (shouldIgnoreTarget(e.target as HTMLElement)) return;
-    if (e.touches.length === 1) {
-      setIsDraggingCamera(true);
-      cameraDragStartRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY, yaw: camera.yaw, pitch: camera.pitch };
-    }
-  };
-
-  const handleTouchMove = (e: React.TouchEvent) => {
-    if (!isDraggingCamera || e.touches.length !== 1) return;
-    const dx = e.touches[0].clientX - cameraDragStartRef.current.x;
-    const dy = e.touches[0].clientY - cameraDragStartRef.current.y;
-    setCamera(prev => ({
-      ...prev,
-      yaw: (cameraDragStartRef.current.yaw + dx * 0.4) % 360,
-      pitch: Math.max(15, Math.min(80, cameraDragStartRef.current.pitch + dy * 0.4))
-    }));
-  };
 
   return (
     <div
@@ -128,42 +68,13 @@ export const WaterPlantCanvas3D: React.FC<WaterPlantCanvas3DProps> = ({
         </div>
       </div>
 
-      {/* 3D Canvas */}
+      {/* 3D Canvas — R3F Scene3D */}
       <div
-        className="flex-1 w-full relative min-h-[480px] lg:min-h-[580px] cursor-grab active:cursor-grabbing select-none"
+        className="flex-1 w-full relative min-h-[480px] lg:min-h-[580px]"
         ref={containerRef}
         id="isometric-modeling-stage"
-        onMouseDown={handleMouseDown}
-        onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp}
-        onMouseLeave={handleMouseUp}
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleMouseUp}
-        onWheel={handleWheel}
       >
-        <svg
-          viewBox="0 0 1000 580"
-          className="w-full h-full absolute inset-0 transition-transform duration-300 ease-out"
-          preserveAspectRatio="xMidYMid meet"
-        >
-          <SVG_DEFS simulation={simulation} />
-          <SceneRenderer
-            camera={camera}
-            animationTick={animationTick}
-            telemetry={telemetry}
-            simulation={simulation}
-            cards={cards}
-            agentStatuses={agentStatuses}
-            activeAnim={activeAnim}
-          />
-          <AgentBadges
-            camera={camera}
-            agentStatuses={agentStatuses}
-            cards={cards}
-            toggleAgentCard={toggleAgentCard}
-          />
-        </svg>
+        <Scene3D />
       </div>
 
       {/* Agent Cards Overlay */}
@@ -194,27 +105,6 @@ export const WaterPlantCanvas3D: React.FC<WaterPlantCanvas3DProps> = ({
         <div className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-cyan-400" /><span>全厂水力载能: {telemetry.energyConsumption} kWh/m³</span></div>
       </div>
 
-      {/* Zoom controls */}
-      <div className="absolute bottom-4 right-4 z-20 flex items-center gap-2 bg-slate-900/90 border border-slate-800 p-1.5 rounded-lg backdrop-blur-md">
-        <button
-          onClick={() => setCamera(prev => ({ ...prev, zoom: Math.max(0.4, Number((prev.zoom - 0.1).toFixed(2))) }))}
-          className="p-1 px-2 rounded bg-slate-800 text-xs text-slate-300 hover:text-white hover:bg-slate-700 font-bold transition cursor-pointer"
-          title="缩小"
-        >-</button>
-        <span className="text-xs font-mono text-teal-400 px-1 min-w-[3.5rem] text-center select-none">
-          {Math.round(camera.zoom * 100)}%
-        </span>
-        <button
-          onClick={() => setCamera(prev => ({ ...prev, zoom: Math.min(3.0, Number((prev.zoom + 0.1).toFixed(2))) }))}
-          className="p-1 px-2 rounded bg-slate-800 text-xs text-slate-300 hover:text-white hover:bg-slate-700 font-bold transition cursor-pointer"
-          title="放大"
-        >+</button>
-        <button
-          onClick={() => setCamera({ zoom: 0.95, yaw: -35, pitch: 35 })}
-          className="p-1 px-1.5 rounded bg-slate-800/60 text-[10px] text-slate-400 hover:text-white hover:bg-slate-700 transition font-medium cursor-pointer"
-          title="恢复初始视图"
-        >重置</button>
-      </div>
     </div>
   );
 };
