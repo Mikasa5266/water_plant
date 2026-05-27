@@ -24,6 +24,8 @@ export type AgentUIStatus = 'normal' | 'pending' | 'alarm' | 'recovering';
 
 export type AgentRunStatus = 'idle' | 'monitoring' | 'thinking' | 'processing' | 'executing' | 'warning';
 
+export type AgentStatusMap = Record<AgentId, 'idle' | 'monitoring' | 'processing' | 'warning'>;
+
 // ─── 异常场景类型 ───
 
 export type IncidentType = 'dosing_abnormal' | 'uf_clogging' | 'ro_fouling' | 'pump_overload';
@@ -139,10 +141,15 @@ export interface TelemetryState {
   dosingRate: number;
   chemicalLevel: number;
   ufPressure: number;
+  roPressureDiff: number;
   roFlux: number;
   roConductivity: number;
+  roFlushMode: 'ready' | 'pending';
+  roRecoveryTime: number;
+  pumpSpeed: number;
   pumpCurrent: number;
   pumpTemperature: number;
+  pumpStatus: 'normal' | 'overload';
   energyConsumption: number;
   healthScore: number;
   activeAgentsCount: number;

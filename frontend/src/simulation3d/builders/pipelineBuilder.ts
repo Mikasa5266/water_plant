@@ -1,6 +1,6 @@
 import type { Camera3D, Renderable } from '../utils/geometry3d';
 import { helperPipeline } from '../utils/geometry3d';
-import type { AnomalySimulation } from '../../types';
+import type { AnomalySimulation } from '../../types/index';
 import { PIPE_PATHS } from '../../data/constants';
 
 export function buildPipelines(camera: Camera3D, animationTick: number, simulation: AnomalySimulation): Renderable[] {

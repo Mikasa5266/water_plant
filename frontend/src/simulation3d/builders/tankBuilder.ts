@@ -1,6 +1,6 @@
 import type { Camera3D, Renderable } from '../utils/geometry3d';
 import { mathProj, helperBox, helperCylinder } from '../utils/geometry3d';
-import type { TelemetryState, AnomalySimulation } from '../../types';
+import type { TelemetryState, AnomalySimulation } from '../../types/index';
 
 export function buildTanks(
   camera: Camera3D,

@@ -1,4 +1,4 @@
-import type { TelemetryState } from '../types';
+import type { TelemetryState } from '../types/index';
 import { request } from './client';
 
 export function fetchTelemetry(): Promise<TelemetryState> {

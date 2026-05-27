@@ -1,6 +1,6 @@
 import React, { useRef, useState } from 'react';
 import { HelpCircle } from 'lucide-react';
-import type { TelemetryState, AnomalySimulation, AgentId, CardState, AgentData, ActiveAnimation } from '../types';
+import type { TelemetryState, AnomalySimulation, AgentId, CardState, AgentData, ActiveAnimation } from '../types/index';
 import { INITIAL_AGENTS_DATA } from '../data/initialAgents';
 import { SceneRenderer } from '../simulation3d/SceneRenderer';
 import { AgentBadges } from '../simulation3d/AgentBadges';

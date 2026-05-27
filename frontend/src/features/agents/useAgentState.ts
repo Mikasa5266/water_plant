@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { AgentId, AgentLog } from '../../types';
+import type { AgentId, AgentLog } from '../../types/index';
 
 export function useAgentState() {
   const [agentStatuses, setAgentStatuses] = useState<Record<AgentId, 'idle' | 'monitoring' | 'processing' | 'warning'>>({

@@ -1,12 +1,12 @@
 import React from 'react';
 import { Play, Pause, Zap, CheckCircle2, ChevronRight, Terminal } from 'lucide-react';
-import { AnomalySimulation } from '../types';
+import { AnomalySimulation, IncidentType } from '../types/index';
 
 interface BottomTimelineProps {
   simulation: AnomalySimulation;
   isPlaying: boolean;
   setIsPlaying: React.Dispatch<React.SetStateAction<boolean>>;
-  triggerSimulationIncident: (incidentType: 'dosing_abnormal' | 'uf_clogging' | 'ro_fouling') => void;
+  triggerSimulationIncident: (incidentType: IncidentType) => void;
   runStepChange: (targetStep: number) => void;
 }
 

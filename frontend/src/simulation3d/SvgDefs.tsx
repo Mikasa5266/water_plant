@@ -1,5 +1,5 @@
 import React from 'react';
-import type { AnomalySimulation } from '../types';
+import type { AnomalySimulation } from '../types/index';
 
 interface SvgDefsProps {
   simulation: AnomalySimulation;

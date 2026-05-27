@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { AgentId, WindowState } from '../types/scenario';
+import type { AgentId, WindowState } from '../types/index';
 
 // ─── Store 接口 ───
 

@@ -1,6 +1,6 @@
-import type { AgentId, AgentLog, TelemetryState } from '../../types';
+import type { AgentId, AgentLog, AgentStatusMap, TelemetryState } from '../../types/index';
 
-type StatusMap = Record<AgentId, 'idle' | 'monitoring' | 'processing' | 'warning'>;
+type StatusMap = AgentStatusMap;
 type LogMap = Record<AgentId, AgentLog[]>;
 type SetStr = (s: string) => void;
 type SetLogs = (l: string[]) => void;
@@ -213,10 +213,10 @@ export function applyRoStep(
       t.energyConsumption = 0.28;
       aStatuses.ro = 'warning';
       aLogs.ro = [
-        { id: `memb_${stamp}`, time: stamp, message: '能效警告：终端膜区产水通量暴跌至 45 LMH，泵功耗升高！', type: 'warning' },
+        { id: `ro_${stamp}`, time: stamp, message: '能效警告：RO 产水通量暴跌至 45 LMH，泵功耗升高！', type: 'warning' },
         ...aLogs.ro
       ];
-      setPayload(['[工艺警报] 终端膜过滤区域产生有机沉淀物极化，膜通量滑落超25%。', '[膜智能体] 捕捉产水通道能效转换指数下滑。']);
+      setPayload(['[工艺警报] RO 过滤区域产生有机沉淀物极化，产水通量滑落超25%。', '[反渗透智能体] 捕捉产水通道能效转换指数下滑。']);
       break;
     case 2:
       setTitle('【步骤2/8】感知探针工艺谱分析并上送中心');
@@ -243,16 +243,16 @@ export function applyRoStep(
         ...aLogs.supervisor
       ];
       aLogs.ro = [
-        { id: `memb_${stamp}`, time: stamp, message: '接授命令，调升循环错流泵。膜丝自清洁阀完全启动。', type: 'info' },
+        { id: `ro_${stamp}`, time: stamp, message: '接授命令，调升循环错流泵。RO 自清洁阀完全启动。', type: 'info' },
         ...aLogs.ro
       ];
       setPayload([...payloadLogs, '[任务派发] 发起精细膜保护错流清洗指令，全流程联动。']);
       break;
     case 5:
       setTitle('【步骤5/8】两相错流剪切清洗曲线推算');
-      setDesc('膜智能体自适应获取洗流流速，设定"增压泵调频至48Hz，自剪力层水力冲击 1.25 m/s"的三级冲洗工艺。');
+      setDesc('反渗透智能体自适应获取洗流流速，设定"增压泵调频至48Hz，自剪力层水力冲击 1.25 m/s"的三级冲洗工艺。');
       aLogs.ro = [
-        { id: `memb_${stamp}`, time: stamp, message: '方案生成：循环冲刷流量 12.5 m³/s 错流高风清洗。', type: 'info' },
+        { id: `ro_${stamp}`, time: stamp, message: '方案生成：循环冲刷流量 12.5 m³/s 错流高风清洗。', type: 'info' },
         ...aLogs.ro
       ];
       setPayload([...payloadLogs, '[模型寻优] 基于膜壁剪切阻抗矩阵算法，拟合出变压剪切冲刷路径。']);
@@ -267,7 +267,7 @@ export function applyRoStep(
       setDesc('错流循环泵输出激升，冲刷掉膜表面的矿物质微细附着体，浊度与电导度快速恢复一致。');
       t.roFlux = 68;
       aLogs.ro = [
-        { id: `memb_${stamp}`, time: stamp, message: '现场反馈：电液循环错洗启动。极化结晶析出通畅，产水能力上升！', type: 'success' },
+        { id: `ro_${stamp}`, time: stamp, message: '现场反馈：电液循环错洗启动。极化结晶析出通畅，产水能力上升！', type: 'success' },
         ...aLogs.ro
       ];
       setPayload([...payloadLogs, '[在线自洁] 精分孔错流剥离完成。浓缩物彻底回流排出。']);
@@ -285,7 +285,7 @@ export function applyRoStep(
         ...aLogs.supervisor
       ];
       aLogs.ro = [
-        { id: `memb_${stamp}`, time: stamp, message: '自洗完成，通量调校为 75.2 LMH 额定产水点。工艺健壮性 100%', type: 'success' },
+        { id: `ro_${stamp}`, time: stamp, message: '自洗完成，通量调校为 75.2 LMH 额定产水点。工艺健壮性 100%', type: 'success' },
         ...aLogs.ro
       ];
       setPayload([...payloadLogs, '[闭环收盘] 本轮极化自清洁阻力降幅 94.1%。成功规避强酸化学酸洗。']);

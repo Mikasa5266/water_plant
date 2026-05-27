@@ -1,6 +1,6 @@
 import type { Camera3D, Renderable } from '../utils/geometry3d';
 import { mathProj } from '../utils/geometry3d';
-import type { AgentId, ActiveAnimation } from '../../types';
+import type { AgentId, ActiveAnimation } from '../../types/index';
 import { PARTICLE_ANIM_COORDS } from '../../data/constants';
 
 function getParticleColor(agentId: AgentId): string {

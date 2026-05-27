@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
 import { Activity } from 'lucide-react';
-import type { TelemetryState } from '../types';
+import type { TelemetryState } from '../types/index';
 import { useAnimationLoop } from '../hooks/useAnimationLoop';
 import { useClock } from '../hooks/useClock';
 import { useAgentState } from '../features/agents/useAgentState';

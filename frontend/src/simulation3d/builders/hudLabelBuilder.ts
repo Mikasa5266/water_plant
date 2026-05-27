@@ -1,6 +1,6 @@
 import type { Camera3D, Renderable } from '../utils/geometry3d';
 import { helperHUDLabel } from '../utils/geometry3d';
-import type { TelemetryState } from '../../types';
+import type { TelemetryState } from '../../types/index';
 
 export function buildHUDLabels(camera: Camera3D, telemetry: TelemetryState): Renderable[] {
   const list: Renderable[] = [];

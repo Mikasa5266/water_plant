@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { AgentId, EventLogEntry, NotificationItem, LODLevel } from '../types/scenario';
+import type { AgentId, EventLogEntry, NotificationItem, LODLevel } from '../types/index';
 
 // ─── 顶部 MetricsOverlay 指标 ───
 

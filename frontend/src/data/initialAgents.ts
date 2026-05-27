@@ -1,10 +1,10 @@
-import type { AgentId, AgentData } from '../types';
+import type { AgentId, AgentData } from '../types/index';
 
 export const INITIAL_AGENTS_DATA: Record<AgentId, Omit<AgentData, 'status' | 'logs'>> = {
   supervisor: {
     id: 'supervisor',
     name: '监督总管智能体',
-    englishName: 'Master Supervisor Agent',
+    englishName: 'Supervisor Coordination Agent',
     role: '统一数据采集、异常归因分析、联合任务派发与闭环控制决策',
     x: 52,
     y: 19,
@@ -63,22 +63,23 @@ export const INITIAL_AGENTS_DATA: Record<AgentId, Omit<AgentData, 'status' | 'lo
   },
   ro: {
     id: 'ro',
-    name: '膜智能体',
-    englishName: 'Membrane Filtration Agent',
-    role: '膜区产水质量监管、冲洗状态恢复判定与能耗自适应管理',
+    name: '反渗透智能体',
+    englishName: 'RO Optimization Agent',
+    role: '反渗透产水质量监管、冲洗状态恢复判定与能耗自适应管理',
     x: 73,
     y: 43,
-    desc: '管理终端高精过滤膜区。把控出水浊度、微生物屏障级别，结合变频泵耗损，自适应匹配恒流量产水能效策略。',
+    desc: '管理反渗透处理单元。把控膜压差、产水电导率与冲洗恢复状态，结合循环泵耗损，自适应匹配恒流量产水能效策略。',
     capabilities: [
-      '膜通量衰减建模',
-      '精细化产水量动态匹配',
-      '清洗状态终点识别',
-      '单体能效(kW/m³)优化'
+      'RO 压差趋势建模',
+      '产水电导率异常识别',
+      '冲洗模式终点识别',
+      '单体能效(kW/m3)优化'
     ],
     metrics: [
-      { key: 'flux', label: '产水通量', value: 75.2, unit: 'LMH', trend: 'stable' },
-      { key: 'turbidity_out', label: '膜过滤后浊度', value: 0.08, unit: 'NTU', trend: 'down' },
-      { key: 'energy_efficiency', label: '单吨产水能耗', value: 0.18, unit: 'kWh/m³', trend: 'down' }
+      { key: 'ro_pressure_diff', label: 'RO 压差', value: 0.45, unit: 'MPa', trend: 'stable' },
+      { key: 'ro_conductivity', label: '产水电导率', value: 18, unit: 'uS/cm', trend: 'stable' },
+      { key: 'ro_flush_mode', label: '冲洗模式', value: '已就绪', unit: '', trend: 'stable' },
+      { key: 'ro_recovery_time', label: '恢复时间', value: 0, unit: 'min', trend: 'stable' }
     ]
   },
   pump: {
@@ -98,7 +99,8 @@ export const INITIAL_AGENTS_DATA: Record<AgentId, Omit<AgentData, 'status' | 'lo
     metrics: [
       { key: 'speed', label: '转速', value: 1480, unit: 'rpm', trend: 'stable' },
       { key: 'current', label: '电流', value: 28, unit: 'A', trend: 'stable' },
-      { key: 'temperature', label: '温度', value: 55, unit: '°C', trend: 'stable' }
+      { key: 'temperature', label: '温度', value: 55, unit: 'degC', trend: 'stable' },
+      { key: 'status', label: '运行状态', value: '正常', unit: '', trend: 'stable' }
     ]
   }
 };

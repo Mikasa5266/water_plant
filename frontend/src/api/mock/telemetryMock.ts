@@ -1,4 +1,4 @@
-import type { TelemetryState } from '../../types';
+import type { TelemetryState } from '../../types/index';
 
 export const DEFAULT_TELEMETRY: TelemetryState = {
   inletFlow: 1240,
@@ -8,10 +8,15 @@ export const DEFAULT_TELEMETRY: TelemetryState = {
   dosingRate: 4.8,
   chemicalLevel: 72,
   ufPressure: 82,
+  roPressureDiff: 0.45,
   roFlux: 74.5,
   roConductivity: 18,
+  roFlushMode: 'ready',
+  roRecoveryTime: 0,
+  pumpSpeed: 1480,
   pumpCurrent: 28,
   pumpTemperature: 55,
+  pumpStatus: 'normal',
   energyConsumption: 0.22,
   healthScore: 98,
   activeAgentsCount: 5,

@@ -3,6 +3,7 @@ export type {
   AgentId,
   AgentUIStatus,
   AgentRunStatus,
+  AgentStatusMap,
   IncidentType,
   ParticleIntent,
   ThinkingContent,

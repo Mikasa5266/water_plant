@@ -9,8 +9,8 @@ import type {
   DecisionStep,
   CameraFocusTarget,
   ParticleIntent,
-} from '../types/scenario';
-import { ScenarioPhase as Phase } from '../types/scenario';
+} from '../types/index';
+import { ScenarioPhase as Phase } from '../types/index';
 
 // ─── Phase → Agent UI 四态映射 ───
 
