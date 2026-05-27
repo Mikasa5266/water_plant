@@ -31,6 +31,11 @@ export function getScenarioMeta(incidentType: IncidentType): { title: string; de
       title: '超滤跨膜压差过高堵塞处置',
       detail: '模拟中段超滤系统表面严重附着，TMP跃升超标，触发变频逆流自冲洗协调。'
     };
+  } else if (incidentType === 'pump_overload') {
+    return {
+      title: '泵组电流过载协同处置',
+      detail: '模拟主泵电流与温升持续爬升，触发泵组智能体联动总控下发降速、切换备用泵与水力平衡方案。'
+    };
   }
   return {
     title: '终端过滤膜表面结晶极化',

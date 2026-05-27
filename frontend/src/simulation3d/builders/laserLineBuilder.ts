@@ -1,6 +1,7 @@
 import type { Camera3D, Renderable } from '../utils/geometry3d';
 import { mathProj } from '../utils/geometry3d';
 import type { AgentId, CardState } from '../../types/index';
+import { AGENT_3D_ANCHORS } from '../../data/constants';
 
 export function buildLaserLines(
   camera: Camera3D,
@@ -10,12 +11,12 @@ export function buildLaserLines(
 ): Renderable[] {
   const list: Renderable[] = [];
 
-  const agentAnchors = {
-    supervisor: mathProj(20, -40, 105, camera),
-    dosing: mathProj(-180, -220, 95, camera),
-    uf: mathProj(50, 220, 85, camera),
-    ro: mathProj(280, 20, 100, camera)
-  };
+  const agentAnchors = Object.fromEntries(
+    Object.entries(AGENT_3D_ANCHORS).map(([id, anchor]) => [
+      id,
+      mathProj(anchor.x, anchor.y, anchor.z, camera)
+    ])
+  ) as Record<AgentId, ReturnType<typeof mathProj>>;
 
   (Object.entries(cards) as [AgentId, CardState][]).forEach(([id, cardState]) => {
     if (!cardState.isOpen) return;
