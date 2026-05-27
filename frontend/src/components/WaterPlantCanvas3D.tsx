@@ -38,10 +38,10 @@ export const WaterPlantCanvas3D: React.FC<WaterPlantCanvas3DProps> = ({
   const cameraDragStartRef = useRef({ x: 0, y: 0, yaw: 0, pitch: 0 });
 
   const shouldIgnoreTarget = (target: HTMLElement) => !!(
-    target.closest('#agent-icon-g-master') ||
+    target.closest('#agent-icon-g-supervisor') ||
     target.closest('#agent-icon-g-dosing') ||
     target.closest('#agent-icon-g-uf') ||
-    target.closest('#agent-icon-g-membrane') ||
+    target.closest('#agent-icon-g-ro') ||
     target.closest('button') ||
     target.closest('[id^="floating-card-"]') ||
     target.closest('.cursor-pointer')

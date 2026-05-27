@@ -11,10 +11,10 @@ export function buildLaserLines(
   const list: Renderable[] = [];
 
   const agentAnchors = {
-    master: mathProj(20, -40, 105, camera),
+    supervisor: mathProj(20, -40, 105, camera),
     dosing: mathProj(-180, -220, 95, camera),
     uf: mathProj(50, 220, 85, camera),
-    membrane: mathProj(280, 20, 100, camera)
+    ro: mathProj(280, 20, 100, camera)
   };
 
   (Object.entries(cards) as [AgentId, CardState][]).forEach(([id, cardState]) => {

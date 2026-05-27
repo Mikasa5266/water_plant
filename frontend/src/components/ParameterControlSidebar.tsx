@@ -127,19 +127,19 @@ export const ParameterControlSidebar: React.FC<ParameterControlSidebarProps> = (
         <div className="space-y-1.5">
           <div className="flex justify-between text-xs">
             <span className="text-slate-300 font-medium">精滤高精膜瞬时通量</span>
-            <span className="text-teal-400 font-mono font-bold">{telemetry.membraneFlux} LMH</span>
+            <span className="text-teal-400 font-mono font-bold">{telemetry.roFlux} LMH</span>
           </div>
           <input 
             type="range" 
             min="30.0" 
             max="110.0" 
             step="0.5"
-            value={telemetry.membraneFlux} 
+            value={telemetry.roFlux} 
             onChange={(e) => {
               const updatedFlux = parseFloat(e.target.value);
               setTelemetry(prev => ({ 
                 ...prev, 
-                membraneFlux: updatedFlux,
+                roFlux: updatedFlux,
                 outletFlow: Math.round(updatedFlux * 16.2)
               }));
             }}

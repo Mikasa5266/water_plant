@@ -1,12 +1,6 @@
-export type { AgentId, AgentStatusType, AgentLog, AgentMetric, AgentData } from './agent';
-export type { TelemetryState } from './telemetry';
-export type { AnomalySimulation, ActiveAnimation } from './simulation';
-export type { CardState, FlowPoint } from './ui';
-
-// 新共享契约类型
 export { ScenarioPhase } from './scenario';
 export type {
-  AgentId as ScenarioAgentId,
+  AgentId,
   AgentUIStatus,
   AgentRunStatus,
   IncidentType,
@@ -17,7 +11,15 @@ export type {
   NotificationItem,
   NormalRange,
   MetricField,
+  AgentMetric,
   AgentMeta,
+  AgentData,
+  AgentLog,
+  TelemetryState,
+  AnomalySimulation,
+  ActiveAnimation,
+  CardState,
+  FlowPoint,
   CameraFocusTarget,
   ParticlePath,
   WindowState,

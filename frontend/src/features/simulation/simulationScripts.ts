@@ -10,15 +10,15 @@ export interface StepPayload {
   stopPlaying?: boolean;
 }
 
-export type ScenarioType = 'dosing_abnormal' | 'uf_clogging' | 'membrane_decay';
+export type ScenarioType = 'dosing_abnormal' | 'uf_clogging' | 'ro_fouling';
 
 export function getActiveAgentForStep(type: ScenarioType | null, step: number): AgentId {
-  if (!type) return 'master';
-  if (step === 3 || step === 4) return 'master';
+  if (!type) return 'supervisor';
+  if (step === 3 || step === 4) return 'supervisor';
   if (type === 'dosing_abnormal') return 'dosing';
   if (type === 'uf_clogging') return 'uf';
-  if (type === 'membrane_decay') return 'membrane';
-  return 'master';
+  if (type === 'ro_fouling') return 'ro';
+  return 'supervisor';
 }
 
 export function getScenarioMeta(incidentType: ScenarioType): { title: string; detail: string } {

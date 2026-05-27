@@ -6,7 +6,7 @@ interface BottomTimelineProps {
   simulation: AnomalySimulation;
   isPlaying: boolean;
   setIsPlaying: React.Dispatch<React.SetStateAction<boolean>>;
-  triggerSimulationIncident: (incidentType: 'dosing_abnormal' | 'uf_clogging' | 'membrane_decay') => void;
+  triggerSimulationIncident: (incidentType: 'dosing_abnormal' | 'uf_clogging' | 'ro_fouling') => void;
   runStepChange: (targetStep: number) => void;
 }
 
@@ -64,14 +64,14 @@ export const BottomTimeline: React.FC<BottomTimelineProps> = ({
             超滤通道堵塞自校正
           </button>
           <button
-            onClick={() => triggerSimulationIncident('membrane_decay')}
+            onClick={() => triggerSimulationIncident('ro_fouling')}
             className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-              simulation.active && simulation.type === 'membrane_decay'
+              simulation.active && simulation.type === 'ro_fouling'
                 ? 'bg-amber-500/20 border border-amber-500/50 text-amber-300'
                 : 'bg-slate-900 border border-slate-800 text-slate-300 hover:bg-slate-800'
             }`}
             title="终端微膜泥沉淀极化，产水率下降处置"
-            id="btn-incident-membrane"
+            id="btn-incident-ro"
           >
             膜组件通量衰减极化
           </button>

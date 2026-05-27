@@ -22,7 +22,7 @@ export type AgentUIStatus = 'normal' | 'pending' | 'alarm' | 'recovering';
 
 // ─── Agent 运行状态 ───
 
-export type AgentRunStatus = 'idle' | 'monitoring' | 'thinking' | 'executing' | 'warning';
+export type AgentRunStatus = 'idle' | 'monitoring' | 'thinking' | 'processing' | 'executing' | 'warning';
 
 // ─── 异常场景类型 ───
 
@@ -58,6 +58,13 @@ export interface EventLogEntry {
   type: 'info' | 'success' | 'warning' | 'error';
 }
 
+export interface AgentLog {
+  id: string;
+  time: string;
+  message: string;
+  type: 'info' | 'success' | 'warning' | 'error';
+}
+
 // ─── 通知条目 ───
 
 export interface NotificationItem {
@@ -89,6 +96,14 @@ export interface MetricField {
   shiftDirection?: 'up' | 'down';
 }
 
+export interface AgentMetric {
+  key: string;
+  label: string;
+  value: number | string;
+  unit?: string;
+  trend?: 'up' | 'down' | 'stable';
+}
+
 // ─── Agent 元数据 ───
 
 export interface AgentMeta {
@@ -98,6 +113,73 @@ export interface AgentMeta {
   color: string;
   role: string;
   metrics: MetricField[];
+}
+
+export interface AgentData {
+  id: AgentId;
+  name: string;
+  englishName: string;
+  role: string;
+  status: AgentRunStatus;
+  x: number;
+  y: number;
+  desc: string;
+  capabilities: string[];
+  metrics: AgentMetric[];
+  logs: AgentLog[];
+}
+
+// ─── 前端遥测状态 ───
+
+export interface TelemetryState {
+  inletFlow: number;
+  outletFlow: number;
+  inletTurbidity: number;
+  outletTurbidity: number;
+  dosingRate: number;
+  chemicalLevel: number;
+  ufPressure: number;
+  roFlux: number;
+  roConductivity: number;
+  pumpCurrent: number;
+  pumpTemperature: number;
+  energyConsumption: number;
+  healthScore: number;
+  activeAgentsCount: number;
+  onlineRate: number;
+}
+
+// ─── 演示场景状态 ───
+
+export interface AnomalySimulation {
+  active: boolean;
+  type: IncidentType | null;
+  step: number;
+  title: string;
+  description: string;
+  logs: string[];
+}
+
+export interface ActiveAnimation {
+  agentId: AgentId;
+  type: 'step_transition' | 'manual_calibration';
+  targetStep?: number;
+  startTick: number;
+  duration: number;
+}
+
+// ─── 2D 窗口/连线状态 ───
+
+export interface CardState {
+  x: number;
+  y: number;
+  isOpen: boolean;
+  zIndex: number;
+}
+
+export interface FlowPoint {
+  x: number;
+  y: number;
 }
 
 // ─── 摄像机聚焦目标 ───

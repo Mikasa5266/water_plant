@@ -1,8 +1,8 @@
 import type { AgentId, AgentData } from '../types';
 
 export const INITIAL_AGENTS_DATA: Record<AgentId, Omit<AgentData, 'status' | 'logs'>> = {
-  master: {
-    id: 'master',
+  supervisor: {
+    id: 'supervisor',
     name: '监督总管智能体',
     englishName: 'Master Supervisor Agent',
     role: '统一数据采集、异常归因分析、联合任务派发与闭环控制决策',
@@ -61,8 +61,8 @@ export const INITIAL_AGENTS_DATA: Record<AgentId, Omit<AgentData, 'status' | 'lo
       { key: 'wash_cycle', label: '反水冲洗间隔', value: 120, unit: 'min', trend: 'up' }
     ]
   },
-  membrane: {
-    id: 'membrane',
+  ro: {
+    id: 'ro',
     name: '膜智能体',
     englishName: 'Membrane Filtration Agent',
     role: '膜区产水质量监管、冲洗状态恢复判定与能耗自适应管理',
@@ -79,6 +79,26 @@ export const INITIAL_AGENTS_DATA: Record<AgentId, Omit<AgentData, 'status' | 'lo
       { key: 'flux', label: '产水通量', value: 75.2, unit: 'LMH', trend: 'stable' },
       { key: 'turbidity_out', label: '膜过滤后浊度', value: 0.08, unit: 'NTU', trend: 'down' },
       { key: 'energy_efficiency', label: '单吨产水能耗', value: 0.18, unit: 'kWh/m³', trend: 'down' }
+    ]
+  },
+  pump: {
+    id: 'pump',
+    name: '泵组智能体',
+    englishName: 'Pump Group Agent',
+    role: '泵组转速、电流、温度与过载风险监测，执行泵组协同调节',
+    x: 65,
+    y: 70,
+    desc: '监管关键泵组运行状态。持续跟踪转速、电流与温升，在出现过载趋势时推演降载与切换方案。',
+    capabilities: [
+      '泵组电流过载识别',
+      '转速与温升趋势分析',
+      '备用泵切换策略推演',
+      '运行能耗与寿命平衡'
+    ],
+    metrics: [
+      { key: 'speed', label: '转速', value: 1480, unit: 'rpm', trend: 'stable' },
+      { key: 'current', label: '电流', value: 28, unit: 'A', trend: 'stable' },
+      { key: 'temperature', label: '温度', value: 55, unit: '°C', trend: 'stable' }
     ]
   }
 };

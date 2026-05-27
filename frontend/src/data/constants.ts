@@ -1,10 +1,11 @@
 import type { AgentId, CardState, AnomalySimulation } from '../types';
 
 export const DEFAULT_CARDS: Record<AgentId, CardState> = {
-  master: { x: 50, y: 15, isOpen: false, zIndex: 10 },
+  supervisor: { x: 50, y: 15, isOpen: false, zIndex: 10 },
   dosing: { x: 12, y: 38, isOpen: false, zIndex: 10 },
   uf: { x: 35, y: 55, isOpen: false, zIndex: 10 },
-  membrane: { x: 62, y: 38, isOpen: false, zIndex: 10 }
+  ro: { x: 62, y: 38, isOpen: false, zIndex: 10 },
+  pump: { x: 70, y: 58, isOpen: false, zIndex: 10 }
 };
 
 export const DEFAULT_SIMULATION: AnomalySimulation = {
@@ -46,17 +47,22 @@ export const PIPE_PATHS = {
     { x: 160, y: 220, z: -50 },
     { x: 210, y: 20, z: -40 }
   ],
-  membrane: [
+  ro: [
     { x: 350, y: 20, z: -30 },
     { x: 440, y: 20, z: -30 }
+  ],
+  pump: [
+    { x: 210, y: 20, z: -40 },
+    { x: 260, y: -120, z: -40 }
   ]
 } as const;
 
 export const AGENT_3D_ANCHORS = {
-  master: { x: 20, y: -40, z: 110 },
+  supervisor: { x: 20, y: -40, z: 110 },
   dosing: { x: -180, y: -220, z: 95 },
   uf: { x: 50, y: 220, z: 85 },
-  membrane: { x: 280, y: 20, z: 100 }
+  ro: { x: 280, y: 20, z: 100 },
+  pump: { x: 260, y: -120, z: 85 }
 } as const;
 
 export const PARTICLE_ANIM_COORDS: Record<AgentId, { origin: { x: number; y: number; z: number }; target: { x: number; y: number; z: number } }> = {
@@ -68,12 +74,16 @@ export const PARTICLE_ANIM_COORDS: Record<AgentId, { origin: { x: number; y: num
     origin: { x: 50, y: 220, z: 20 },
     target: { x: 50, y: 220, z: 85 }
   },
-  membrane: {
+  ro: {
     origin: { x: 280, y: 20, z: 20 },
     target: { x: 280, y: 20, z: 100 }
   },
-  master: {
+  supervisor: {
     origin: { x: 20, y: -40, z: 10 },
     target: { x: 20, y: -40, z: 110 }
+  },
+  pump: {
+    origin: { x: 260, y: -120, z: 15 },
+    target: { x: 260, y: -120, z: 85 }
   }
 };

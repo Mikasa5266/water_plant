@@ -34,7 +34,7 @@ export const SVG_DEFS: React.FC<SvgDefsProps> = ({ simulation }) => (
       <stop offset="100%" stopColor="#1e3a8a" stopOpacity="0.15" />
     </linearGradient>
 
-    <linearGradient id="membraneGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+    <linearGradient id="roGrad" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" stopColor="#10b981" stopOpacity="0.6" />
       <stop offset="70%" stopColor="#059669" stopOpacity="0.35" />
       <stop offset="100%" stopColor="#064e3b" stopOpacity="0.1" />

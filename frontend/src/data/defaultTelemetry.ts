@@ -8,9 +8,12 @@ export const DEFAULT_TELEMETRY: TelemetryState = {
   dosingRate: 4.8,
   chemicalLevel: 72,
   ufPressure: 82,
-  membraneFlux: 75.2,
+  roFlux: 75.2,
+  roConductivity: 18,
+  pumpCurrent: 28,
+  pumpTemperature: 55,
   energyConsumption: 0.22,
   healthScore: 98,
-  activeAgentsCount: 4,
+  activeAgentsCount: 5,
   onlineRate: 99.2
 };

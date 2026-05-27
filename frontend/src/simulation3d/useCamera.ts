@@ -9,10 +9,10 @@ export function useCamera() {
   const shouldIgnoreTarget = (e: { target: EventTarget | null }) => {
     const target = e.target as HTMLElement;
     return !!(
-      target.closest('#agent-icon-g-master') ||
+      target.closest('#agent-icon-g-supervisor') ||
       target.closest('#agent-icon-g-dosing') ||
       target.closest('#agent-icon-g-uf') ||
-      target.closest('#agent-icon-g-membrane') ||
+      target.closest('#agent-icon-g-ro') ||
       target.closest('button') ||
       target.closest('[id^="floating-card-"]') ||
       target.closest('.cursor-pointer')

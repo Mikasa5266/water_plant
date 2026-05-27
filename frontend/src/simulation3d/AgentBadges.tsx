@@ -16,10 +16,10 @@ export const AgentBadges: React.FC<AgentBadgesProps> = ({
   camera, agentStatuses, cards, toggleAgentCard
 }) => {
   const agentAnchors = {
-    master: mathProj(20, -40, 110, camera),
+    supervisor: mathProj(20, -40, 110, camera),
     dosing: mathProj(-180, -220, 95, camera),
     uf: mathProj(50, 220, 85, camera),
-    membrane: mathProj(280, 20, 100, camera)
+    ro: mathProj(280, 20, 100, camera)
   };
 
   return (
@@ -55,10 +55,10 @@ export const AgentBadges: React.FC<AgentBadgesProps> = ({
               filter="url(#glow)"
             />
             <g transform="translate(-5.5, -5.5) scale(0.48)">
-              {id === 'master' && <Activity className={`w-24 h-24 text-${status === 'warning' ? 'amber-400' : 'teal-400'}`} />}
+              {id === 'supervisor' && <Activity className={`w-24 h-24 text-${status === 'warning' ? 'amber-400' : 'teal-400'}`} />}
               {id === 'dosing' && <Sparkles className={`w-24 h-24 text-${status === 'warning' ? 'amber-400' : 'yellow-400'}`} />}
               {id === 'uf' && <Layers className={`w-24 h-24 text-${status === 'warning' ? 'amber-400' : 'cyan-400'}`} />}
-              {id === 'membrane' && <Droplet className={`w-24 h-24 text-${status === 'warning' ? 'amber-400' : 'emerald-400'}`} />}
+              {id === 'ro' && <Droplet className={`w-24 h-24 text-${status === 'warning' ? 'amber-400' : 'emerald-400'}`} />}
             </g>
             <g transform="translate(0, -22)" className="opacity-90 group-hover:opacity-100 transition-opacity">
               <rect
