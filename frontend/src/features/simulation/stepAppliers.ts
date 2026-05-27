@@ -292,3 +292,106 @@ export function applyRoStep(
       break;
   }
 }
+
+export function applyPumpStep(
+  step: number, stamp: string,
+  t: TelemetryState, aStatuses: StatusMap, aLogs: LogMap, payloadLogs: string[],
+  setTitle: SetStr, setDesc: SetStr, setPayload: SetLogs
+) {
+  switch (step) {
+    case 1:
+      setTitle('[步骤1/8] 泵组过载：主泵电流与温升越限');
+      setDesc('主泵电流快速升至 46A，温度达到 78degC，泵组智能体判定存在持续过载风险。');
+      t.pumpCurrent = 46;
+      t.pumpTemperature = 78;
+      t.pumpStatus = 'overload';
+      t.healthScore = 82;
+      aStatuses.pump = 'warning';
+      aLogs.pump = [
+        { id: `pump_${stamp}`, time: stamp, message: '警报：主泵电流升至 46A，温升曲线超过安全运行阈值。', type: 'warning' },
+        ...aLogs.pump
+      ];
+      setPayload(['[系统警报] 泵组负载异常触发，水力输送链路进入保护评估。', '[泵组智能体] 捕获电流、转速、温升三路异常特征。']);
+      break;
+    case 2:
+      setTitle('[步骤2/8] 运行断面数据上送总控');
+      setDesc('泵组智能体打包主泵负载、备用泵状态与出水流量波动，提交总控智能体进行联动诊断。');
+      aLogs.pump = [
+        { id: `pump_${stamp}`, time: stamp, message: '已上送泵组负载快照：主泵电流、轴温、转速与备用泵可用状态。', type: 'info' },
+        ...aLogs.pump
+      ];
+      setPayload([...payloadLogs, '[通信链路] 泵组运行断面已进入总控诊断队列。']);
+      break;
+    case 3:
+      setTitle('[步骤3/8] 总控识别非工艺水质异常');
+      setDesc('总控智能体排除水质突变，判断故障主要来自输送设备负载偏高，需要执行降载和备用泵接管。');
+      aStatuses.supervisor = 'warning';
+      aLogs.supervisor = [
+        { id: `mast_${stamp}`, time: stamp, message: '诊断结论：泵组过载为主因，建议主泵降速并启动备用泵分担流量。', type: 'warning' },
+        ...aLogs.supervisor
+      ];
+      setPayload([...payloadLogs, '[总控智能体] 完成归因：非水质异常，定位为泵组负载风险。']);
+      break;
+    case 4:
+      setTitle('[步骤4/8] 下发泵组降载与备用切换任务');
+      setDesc('总控向泵组智能体派发协同任务：降低主泵转速、打开备用泵联动，并保持出水流量稳定。');
+      aStatuses.supervisor = 'processing';
+      aStatuses.pump = 'processing';
+      aLogs.pump = [
+        { id: `pump_${stamp}`, time: stamp, message: '接收调度指令：主泵降速 12%，备用泵进入软启动。', type: 'info' },
+        ...aLogs.pump
+      ];
+      setPayload([...payloadLogs, '[调度中心] 泵组降载策略已生成，准备写入模拟 PLC 执行队列。']);
+      break;
+    case 5:
+      setTitle('[步骤5/8] 泵组水力平衡方案生成');
+      setDesc('泵组智能体计算变频降载曲线，生成主泵与备用泵流量分配比例，避免瞬时水锤。');
+      t.pumpSpeed = 1360;
+      aLogs.pump = [
+        { id: `pump_${stamp}`, time: stamp, message: '方案生成：主泵转速降至 1360rpm，备用泵补偿 18% 输送负载。', type: 'info' },
+        ...aLogs.pump
+      ];
+      setPayload([...payloadLogs, '[泵组智能体] 输出变频降载与备用泵补偿曲线。']);
+      break;
+    case 6:
+      setTitle('[步骤6/8] 安全校验后执行模拟控制');
+      setDesc('系统完成压力波动校验，确认降载动作不会造成出水中断或管网压力突变。');
+      t.energyConsumption = 0.24;
+      setPayload([...payloadLogs, '[安全校验] 水力平衡通过，模拟控制指令开始执行。']);
+      break;
+    case 7:
+      setTitle('[步骤7/8] 主泵降速与备用泵接管到位');
+      setDesc('主泵电流回落，备用泵完成平滑接管，泵组温升曲线开始下降。');
+      t.pumpCurrent = 32;
+      t.pumpTemperature = 62;
+      t.outletFlow = 1205;
+      aLogs.pump = [
+        { id: `pump_${stamp}`, time: stamp, message: '执行反馈：备用泵接管完成，主泵电流回落至 32A。', type: 'success' },
+        ...aLogs.pump
+      ];
+      setPayload([...payloadLogs, '[执行反馈] 泵组降载动作完成，输送流量保持稳定。']);
+      break;
+    case 8:
+      setTitle('[步骤8/8] 泵组恢复稳定巡检');
+      setDesc('泵组电流、温度与出水流量恢复到安全区间，多智能体关闭过载处置流程。');
+      t.pumpSpeed = 1480;
+      t.pumpCurrent = 28;
+      t.pumpTemperature = 55;
+      t.pumpStatus = 'normal';
+      t.outletFlow = 1210;
+      t.healthScore = 98;
+      t.energyConsumption = 0.22;
+      aStatuses.supervisor = 'monitoring';
+      aStatuses.pump = 'monitoring';
+      aLogs.supervisor = [
+        { id: `mast_${stamp}`, time: stamp, message: '泵组过载处置完成，全厂输送链路恢复低风险巡检。', type: 'success' },
+        ...aLogs.supervisor
+      ];
+      aLogs.pump = [
+        { id: `pump_${stamp}`, time: stamp, message: '泵组状态恢复：电流 28A，温度 55degC，运行状态正常。', type: 'success' },
+        ...aLogs.pump
+      ];
+      setPayload([...payloadLogs, '[闭环完成] 泵组过载风险解除，系统恢复额定工况。']);
+      break;
+  }
+}

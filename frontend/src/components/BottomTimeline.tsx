@@ -75,6 +75,18 @@ export const BottomTimeline: React.FC<BottomTimelineProps> = ({
           >
             膜组件通量衰减极化
           </button>
+          <button
+            onClick={() => triggerSimulationIncident('pump_overload')}
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+              simulation.active && simulation.type === 'pump_overload'
+                ? 'bg-amber-500/20 border border-amber-500/50 text-amber-300'
+                : 'bg-slate-900 border border-slate-800 text-slate-300 hover:bg-slate-800'
+            }`}
+            title="触发泵组电流过载，演示降载与备用泵协同接管"
+            id="btn-incident-pump"
+          >
+            泵组过载协同处置
+          </button>
         </div>
 
         {/* Control playback keys */}

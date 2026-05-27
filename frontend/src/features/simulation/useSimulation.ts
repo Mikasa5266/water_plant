@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import type { AgentId, AgentLog, AgentStatusMap, IncidentType, TelemetryState, AnomalySimulation, ActiveAnimation, CardState } from '../../types/index';
 import { getTimestamp } from '../../utils/format';
 import { getScenarioMeta } from './simulationScripts';
-import { applyDosingStep, applyUfStep, applyRoStep } from './stepAppliers';
+import { applyDosingStep, applyUfStep, applyRoStep, applyPumpStep } from './stepAppliers';
 
 interface UseSimulationDeps {
   animationTickRef: React.RefObject<number>;
@@ -84,6 +84,7 @@ export function useSimulation(deps: UseSimulationDeps) {
       if (agentId === 'dosing') { copy.dosingRate = 4.8; copy.chemicalLevel = Math.min(copy.chemicalLevel + 5, 100); }
       else if (agentId === 'uf') { copy.ufPressure = 82; }
       else if (agentId === 'ro') { copy.roFlux = 75.2; }
+      else if (agentId === 'pump') { copy.pumpCurrent = 28; copy.pumpTemperature = 55; copy.pumpStatus = 'normal'; }
       else if (agentId === 'supervisor') { copy.healthScore = 98; copy.onlineRate = 99.5; }
       return copy;
     });
@@ -124,6 +125,8 @@ export function useSimulation(deps: UseSimulationDeps) {
       applyUfStep(targetStep, stamp, t, aStatuses, aLogs, payloadLogs, s => { stepTitle = s; }, s => { stepDesc = s; }, p => { payloadLogs = p; });
     } else if (sim.type === 'ro_fouling') {
       applyRoStep(targetStep, stamp, t, aStatuses, aLogs, payloadLogs, s => { stepTitle = s; }, s => { stepDesc = s; }, p => { payloadLogs = p; });
+    } else if (sim.type === 'pump_overload') {
+      applyPumpStep(targetStep, stamp, t, aStatuses, aLogs, payloadLogs, s => { stepTitle = s; }, s => { stepDesc = s; }, p => { payloadLogs = p; });
     }
 
     if (targetStep === 8) setIsPlaying(false);
@@ -193,8 +196,9 @@ export function useSimulation(deps: UseSimulationDeps) {
       inletFlow: 1240, outletFlow: 1210,
       inletTurbidity: 18.5, outletTurbidity: 0.04,
       dosingRate: 4.8, chemicalLevel: 72,
-      ufPressure: 82, roFlux: 75.2,
-      roConductivity: 18, pumpCurrent: 28, pumpTemperature: 55,
+      ufPressure: 82, roPressureDiff: 0.45, roFlux: 75.2,
+      roConductivity: 18, roFlushMode: 'ready', roRecoveryTime: 0,
+      pumpSpeed: 1480, pumpCurrent: 28, pumpTemperature: 55, pumpStatus: 'normal',
       energyConsumption: 0.22, healthScore: 98,
       activeAgentsCount: 5, onlineRate: 99.2
     });
