@@ -1,91 +1,119 @@
 # 前端开发规范
+最后更新：2026-05-26
 
-最后更新：2026-05-25
+## 1. 当前定位
 
-## 1. 技术栈
+本仓库前端当前是一个 **纯前端 Demo**，技术栈以 **React + TypeScript + Vite** 为准。
 
-- Vue 3
+这一阶段的重点是：
+
+1. 把现有 Demo 里的页面、状态、3D 场景和交互逻辑拆分清楚。
+2. 形成稳定的目录边界，方便多人协作。
+3. 预留未来对接真实接口的入口，但本阶段 **不推进后端实现**。
+
+## 2. 技术栈
+
+- React
 - TypeScript
 - Vite
-- Vue Router
-- Pinia
-- ESLint + Oxlint + Prettier
+- React DOM
+- lucide-react
+- motion
+- Tailwind CSS
 
-使用 npm，不混用 pnpm、yarn、bun。
+如果后续需要引入状态管理或 3D 相关库，再根据实际拆分补充，不在本阶段预先堆叠。
 
-## 2. 代码组织
+## 3. 目录结构
 
 ```text
-src/
-  api/
-  app/
-  assets/
-  components/
-  features/
-  pages/
-  router/
-  shared/
-  simulation3d/
-  stores/
-  types/
-  utils/
+frontend/src/
+  app/           # 应用装配层：全局布局、路由壳、Provider、入口编排
+  pages/         # 页面级组件，只做组合，不堆业务逻辑
+  features/      # 按业务能力拆分的功能模块
+  components/    # 跨业务复用的 UI 组件
+  simulation3d/  # 3D 场景、相机、设备、动画、几何工具
+  api/           # 接口适配层：真实接口、mock、数据转换、客户端封装
+  stores/        # 跨页面共享状态
+  hooks/         # 可复用逻辑
+  types/         # 类型定义
+  utils/         # 通用工具
+  data/          # 静态配置、初始数据、场景字典
+  styles/        # 全局样式与主题变量
 ```
 
-放置规则：
+## 4. 拆分原则
 
-- `pages/`: 路由页面，负责组合，不写复杂逻辑。
-- `features/`: 水厂业务模块，例如设备、告警、工艺流程、Agent 流程。
-- `components/`: 跨业务复用组件。
-- `shared/`: 轻量共享逻辑和常量。
-- `api/`: HTTP 客户端、mock、接口封装。
-- `simulation3d/`: 3D 场景加载、动画控制、设备状态映射。
-- `stores/`: Pinia store。
-- `types/`: 前端全局类型，跨端类型优先来自 `contracts/`。
+- `pages/` 只负责页面组合，不写复杂业务分支。
+- `features/` 按业务域拆分，例如 `agent-flow`、`simulation-studio`、`telemetry-dashboard`。
+- `simulation3d/` 只放 3D 场景相关代码，不混页面状态管理。
+- `api/` 统一承接数据请求和 mock，组件内部不直接写请求细节。
+- `types/` 统一放跨模块数据结构，接口字段变化先在这里收口。
+- `data/` 放初始配置、场景脚本、静态枚举和 demo 数据。
+- `components/` 放纯展示型复用组件，避免承载业务状态。
 
-## 3. 命名
+## 5. React 写法
 
-- Vue 组件：`PascalCase.vue`
-- 组合式函数：`useXxx.ts`
+- 统一使用函数组件。
+- 统一使用 TypeScript 显式类型。
+- 页面优先拆成 `page -> feature -> component` 三层。
+- 事件处理逻辑优先提到 hook 或 feature 层。
+- UI 状态尽量本地化；只有跨页面复用才进入 store。
+- 共享数据先抽 `types/`，再决定是否进入 `api/` 或 `data/`。
+
+## 6. 状态边界
+
+建议把状态分成四类：
+
+1. 视图状态：弹窗开关、tab、hover、dragging。
+2. 业务状态：设备状态、Agent 状态、演练步骤、告警流转。
+3. 场景状态：3D 相机、动画、粒子、视角焦点。
+4. 数据状态：telemetry、日志、配置、接口返回。
+
+原则是：
+
+- 页面级状态留在页面或 feature 容器中。
+- 可复用的状态逻辑才抽成 hook/store。
+- 3D 场景内部状态不要直接反向污染页面层。
+
+## 7. 接口预留
+
+本阶段虽然不接后端，但要提前把真实接口的入口整理出来：
+
+- `api/client.ts`：请求客户端统一封装
+- `api/*.ts`：按业务模块组织接口
+- `api/mock/*.ts`：demo 和联调期间的模拟数据
+- `types/*.ts`：接口数据和前端视图模型分离
+
+要求是：
+
+- 组件里不硬编码 URL。
+- mock 数据尽量贴近最终接口字段。
+- 一旦接口字段要变，先改 `types/` 和 `api/`，再改 UI。
+
+## 8. 3D 相关
+
+- 3D 场景建议独立在 `simulation3d/` 下。
+- 场景编排、相机控制、设备投影、动画驱动分开写。
+- 几何工具和投影算法放 `simulation3d/utils/` 或 `utils/`，不要散在组件里。
+- 3D 组件只接收明确输入，不直接读取页面里复杂状态树。
+
+## 9. 命名
+
+- React 组件：`PascalCase.tsx`
+- Hook：`useXxx.ts`
 - 工具函数：`camelCase.ts`
-- 类型文件：`xxx.types.ts`
+- 类型文件：`xxx.types.ts` 或 `types.ts`
 - 常量文件：`xxx.constants.ts`
-- 业务模块目录：小写短横线，例如 `agent-flow/`
+- 业务模块目录：`kebab-case/`
 
-## 4. Vue 写法
+## 10. 验证
 
-- 优先使用 `<script setup lang="ts">`。
-- 组件 props 和 emit 必须显式声明类型。
-- 页面级数据请求集中在页面或 feature 容器，子组件尽量通过 props 接收。
-- 不在组件中硬编码后端地址，统一走 `src/api/`。
-- 不把 mock 数据散落在组件中，mock 统一放到 `api/` 或对应 feature 的 mock 文件。
-
-## 5. 状态管理
-
-- 局部 UI 状态优先用组件状态。
-- 跨页面共享状态使用 Pinia。
-- 接口返回数据不要无理由复制到多个 store。
-- Agent 运行流、设备状态、3D 状态要有清晰边界，避免互相直接改内部状态。
-
-## 6. 3D 接入
-
-- 3D 逻辑放 `src/simulation3d/`。
-- UI 组件只发送明确事件或状态，不直接操纵模型内部对象。
-- 设备动画事件应对应 `contracts/simulation-events.schema.json`。
-- 模型路径和设备 ID 必须稳定，避免靠中文显示名做逻辑匹配。
-
-## 7. 样式
-
-- 先遵循现有样式系统；没有系统前，保持克制和一致。
-- 不在多个组件重复写同一套布局规则。
-- 业务页面优先信息密度和可读性，不做营销式落地页。
-
-## 8. 验证
-
-提交前运行：
+前端改动前后，至少检查：
 
 ```sh
+cd frontend
 npm run lint
 npm run build
 ```
 
-涉及 UI/3D 的改动还需要提供截图、录屏或清晰复现步骤。
+如果涉及 UI 或 3D 改动，再补截图或运行效果说明。

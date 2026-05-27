@@ -1,0 +1,6 @@
+{
+  "name": "未来水厂智能运营系统",
+  "description": "全屏沉浸式未来水厂智能监控中心，支持四大智能体（监管总管、加药、超滤、膜）交互式空间建模、拖拽式信息卡与多节点警报智能闭环处置模拟。",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
