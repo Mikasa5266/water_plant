@@ -44,13 +44,13 @@ export const DEVICE_CENTERS: Record<string, { x: number; y: number; z: number }>
 /**
  * 聚焦时相机偏移量（绝对值，data 空间内）
  * 相机位置 = 设备中心 + offset
- * 值较小因为锚点已收拢
+ * 值需足够大，确保聚焦后能看到完整设备及其操作，而非贴到设备中心
  */
 export const FOCUS_OFFSET = {
-  /** 侧上方偏移 */
-  positionMul: 2,
-  /** 高度偏移 */
-  heightMul: 1.5,
-  /** 深度偏移 */
-  depthMul: 1.8,
+  /** 侧向偏移 — 保持水平距离，避免贴到设备 */
+  positionMul: 35,
+  /** 高度偏移 — 略高于设备，俯视角度 */
+  heightMul: 30,
+  /** 深度偏移 — 前后拉开距离 */
+  depthMul: 35,
 } as const;
