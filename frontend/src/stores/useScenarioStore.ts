@@ -11,6 +11,8 @@ import type {
   ParticleIntent,
 } from '../types/index';
 import { ScenarioPhase as Phase } from '../types/index';
+import { DEVICE_CENTERS, FOCUS_OFFSET } from '../simulation3d/config';
+import { toThreePosTuple } from '../simulation3d/utils/coordinates';
 
 // ─── Phase → Agent UI 四态映射 ───
 
@@ -206,9 +208,27 @@ export const useScenarioStore = create<ScenarioState & ScenarioActions>((set, ge
         patch.particleIntent = null;
         patch.activeAgentId = targetAgentId;
         break;
-      case Phase.EXECUTING:
+      case Phase.EXECUTING: {
         patch.particleIntent = 'execute';
+        // 自动聚焦到目标设备本体中心，让人看清执行过程
+        if (targetAgentId) {
+          const dc = DEVICE_CENTERS[targetAgentId];
+          if (dc) {
+            const lookAt = toThreePosTuple(dc);
+            const target: CameraFocusTarget = {
+              position: [
+                lookAt[0] + FOCUS_OFFSET.positionMul,
+                lookAt[1] + FOCUS_OFFSET.heightMul,
+                lookAt[2] + FOCUS_OFFSET.depthMul,
+              ],
+              lookAt: [lookAt[0], lookAt[1], lookAt[2]],
+              duration: 2000,
+            };
+            patch.cameraFocus = target;
+          }
+        }
         break;
+      }
       case Phase.DEVICE_OPERATING:
         patch.particleIntent = null;
         patch.deviceFlashing = null;

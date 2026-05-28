@@ -76,9 +76,9 @@ export const AgentNode: React.FC<AgentNodeProps> = ({ agentId }) => {
 
   return (
     <group position={pos}>
-      {/* 外层发光球 */}
+      {/* 外层发光球 — 半径放大确保缩放后仍可见 */}
       <mesh ref={outerRef}>
-        <sphereGeometry args={[4.5, 32, 32]} />
+        <sphereGeometry args={[10, 32, 32]} />
         <meshStandardMaterial
           color={emissiveColor}
           emissive={emissiveColor}
@@ -92,7 +92,7 @@ export const AgentNode: React.FC<AgentNodeProps> = ({ agentId }) => {
 
       {/* 内层核心球 */}
       <mesh ref={innerRef}>
-        <sphereGeometry args={[1.8, 32, 32]} />
+        <sphereGeometry args={[4, 32, 32]} />
         <meshStandardMaterial
           color="#ffffff"
           emissive={emissiveColor}

@@ -1,14 +1,17 @@
-import React, { useRef, useCallback, useEffect } from 'react';
+import React, { useRef, useEffect } from 'react';
 import { useThree, useFrame } from '@react-three/fiber';
 import { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
 import { OrbitControls } from '@react-three/drei';
 import * as THREE from 'three';
 import { useScenarioStore } from '../stores/useScenarioStore';
+import { SCENE_SCALE, CAMERA_DEFAULTS } from './config';
 
 /**
  * 相机控制器
+ * - 位于 scale group 外面
  * - 默认：OrbitControls 自由旋转/缩放
- * - 聚焦时：禁用 OrbitControls，平滑 lerp 到 store 指定的 cameraFocus 目标
+ * - 聚焦时：禁用 OrbitControls，平滑 lerp 到目标
+ *   注意：cameraFocus 的坐标是在 scale group 内部的，需要乘以 SCENE_SCALE 映射到相机空间
  * - 聚焦完成后自动恢复 OrbitControls
  */
 export const CameraController: React.FC = () => {
@@ -22,7 +25,7 @@ export const CameraController: React.FC = () => {
     target: THREE.Vector3;
   } | null>(null);
 
-  // 聚焦目标向量缓存
+  // 聚焦目标向量缓存（已转换到相机空间）
   const focusPosition = useRef(new THREE.Vector3());
   const focusLookAt = useRef(new THREE.Vector3());
 
@@ -30,6 +33,10 @@ export const CameraController: React.FC = () => {
   const progress = useRef(0);
   const isFocusing = useRef(false);
   const isRecovering = useRef(false);
+
+  /** 将 scale group 内坐标转换为相机空间坐标 */
+  const toCameraSpace = (pos: [number, number, number]): THREE.Vector3 =>
+    new THREE.Vector3(pos[0] * SCENE_SCALE, pos[1] * SCENE_SCALE, pos[2] * SCENE_SCALE);
 
   // 当 cameraFocus 变为非 null：开始聚焦
   useEffect(() => {
@@ -40,16 +47,9 @@ export const CameraController: React.FC = () => {
         target: controlsRef.current?.target.clone() ?? new THREE.Vector3(),
       };
 
-      focusPosition.current.set(
-        cameraFocus.position[0],
-        cameraFocus.position[1],
-        cameraFocus.position[2],
-      );
-      focusLookAt.current.set(
-        cameraFocus.lookAt[0],
-        cameraFocus.lookAt[1],
-        cameraFocus.lookAt[2],
-      );
+      // 映射到相机空间（scale group 内坐标 → 相机坐标）
+      focusPosition.current.copy(toCameraSpace(cameraFocus.position));
+      focusLookAt.current.copy(toCameraSpace(cameraFocus.lookAt));
 
       progress.current = 0;
       isFocusing.current = true;
@@ -133,11 +133,11 @@ export const CameraController: React.FC = () => {
       ref={controlsRef}
       enableDamping
       dampingFactor={0.08}
-      minDistance={40}
-      maxDistance={600}
+      minDistance={CAMERA_DEFAULTS.minDistance * SCENE_SCALE}
+      maxDistance={CAMERA_DEFAULTS.maxDistance * SCENE_SCALE}
       minPolarAngle={0.15}
       maxPolarAngle={Math.PI / 2 - 0.1}
-      target={[40, 20, 0]}
+      target={CAMERA_DEFAULTS.target.map(v => v * SCENE_SCALE) as [number, number, number]}
     />
   );
 };

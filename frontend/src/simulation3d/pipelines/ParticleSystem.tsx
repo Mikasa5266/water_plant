@@ -1,13 +1,14 @@
-import React, { useRef, useMemo, useEffect, useCallback } from 'react';
+import React, { useRef, useMemo, useEffect } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { useScenarioStore } from '../../stores/useScenarioStore';
 import { AGENT_3D_ANCHORS } from '../../data/constants';
+import { DEVICE_CENTERS } from '../config';
 import type { ParticleIntent, AgentId } from '../../types';
-import { toThreePos, toThreePosTuple } from '../utils/coordinates';
+import { toThreePosTuple } from '../utils/coordinates';
 
 const PARTICLE_COUNT = 60;
-const IDLE_COUNT = 30; // 空闲背景粒子数
+const IDLE_COUNT = 30;
 
 /** 粒子颜色映射 */
 const INTENT_COLORS: Record<ParticleIntent, string> = {
@@ -22,72 +23,125 @@ interface ParticleData {
   segmentIndex: number;
 }
 
-/**
- * 获取设备底部坐标（data 空间，z 压低到地面）
- */
-function getDevicePos(agentId: AgentId): { x: number; y: number; z: number } {
-  const a = AGENT_3D_ANCHORS[agentId];
-  return { x: a.x, y: a.y, z: 10 };
+/** 自定义发光粒子 shader — 在 fragment 中绘制径向渐变圆点 */
+const GLOW_VERTEX = /* glsl */ `
+  varying vec2 vUv;
+  void main() {
+    vUv = uv;
+    gl_Position = projectionMatrix * modelViewMatrix * instanceMatrix * vec4(position, 1.0);
+  }
+`;
+
+const GLOW_FRAGMENT = /* glsl */ `
+  uniform vec3 uColor;
+  uniform float uOpacity;
+  varying vec2 vUv;
+
+  void main() {
+    // 以 UV 中心为圆心，计算到边缘的距离
+    float dist = length(vUv - 0.5) * 2.0;
+    // 径向衰减：中心亮，边缘透明
+    float alpha = 1.0 - smoothstep(0.0, 1.0, dist);
+    alpha *= uOpacity;
+    // 中心更亮（core glow）
+    float core = 1.0 - smoothstep(0.0, 0.35, dist);
+    vec3 col = mix(uColor, vec3(1.0), core * 0.6);
+
+    gl_FragColor = vec4(col, alpha);
+  }
+`;
+
+/** 创建共享的 ShaderMaterial（每个颜色组复用同一份 uniform struct） */
+function makeGlowMaterial(color: string, opacity: number): THREE.ShaderMaterial {
+  const threeColor = new THREE.Color(color);
+  return new THREE.ShaderMaterial({
+    vertexShader: GLOW_VERTEX,
+    fragmentShader: GLOW_FRAGMENT,
+    uniforms: {
+      uColor: { value: threeColor },
+      uOpacity: { value: opacity },
+    },
+    transparent: true,
+    blending: THREE.AdditiveBlending,
+    depthWrite: false,
+    side: THREE.DoubleSide,
+  });
 }
 
 /**
- * 获取中枢底部坐标（data 空间）
+ * 获取设备底部坐标（data 空间）
+ * 从 DEVICE_CENTERS 读取设备中心，z 值降低到地面
  */
-function getSupervisorBase(): { x: number; y: number; z: number } {
-  const a = AGENT_3D_ANCHORS.supervisor;
-  return { x: a.x, y: a.y, z: 20 };
+function getDevicePos(agentId: AgentId): { x: number; y: number; z: number } {
+  const center = DEVICE_CENTERS[agentId];
+  return { x: center.x, y: center.y, z: 2 };
+}
+
+/**
+ * 获取监管中枢本体中心坐标（data 空间）
+ * 从 DEVICE_CENTERS 读取，而非 AGENT_3D_ANCHORS（球体悬浮高度）
+ */
+function getSupervisorCenter(): { x: number; y: number; z: number } {
+  return DEVICE_CENTERS.supervisor;
 }
 
 /**
  * 根据 intent 和目标 agent 生成三段式粒子路径
- * - anomaly:  device → supervisor_base → supervisor_agent
- * - dispatch: supervisor_agent → midpoint → agent
- * - execute:  agent → midpoint → device
+ * anomaly: 设备 → (弧线) → 监管中枢本体
+ * dispatch: 监管中枢本体 → (弧线) → Agent 球体
+ * execute: Agent 球体 → (弧线) → 设备
  */
 function buildPath(intent: ParticleIntent, targetAgentId: AgentId): THREE.Vector3[] {
   const agent = AGENT_3D_ANCHORS[targetAgentId];
-  const supervisor = AGENT_3D_ANCHORS.supervisor;
+  const supervisorCenter = getSupervisorCenter();
   const device = getDevicePos(targetAgentId);
-  const supervisorBase = getSupervisorBase();
 
   const agentPos = toThreePosTuple(agent);
-  const supervisorPos = toThreePosTuple(supervisor);
+  const supervisorCenterPos = toThreePosTuple(supervisorCenter);
   const devicePos = toThreePosTuple(device);
-  const supervisorBasePos = toThreePosTuple(supervisorBase);
 
   switch (intent) {
     case 'anomaly': {
-      // 设备 → 中枢底部 → 中枢球体
+      // 设备 → 监管中枢本体中心
       const mid = new THREE.Vector3(
-        (devicePos[0] + supervisorBasePos[0]) / 2,
-        (devicePos[1] + supervisorBasePos[1]) / 2 + 20,
-        (devicePos[2] + supervisorBasePos[2]) / 2,
+        (devicePos[0] + supervisorCenterPos[0]) / 2,
+        Math.max(devicePos[1], supervisorCenterPos[1]) + 25,
+        (devicePos[2] + supervisorCenterPos[2]) / 2,
       );
       return [
         new THREE.Vector3(...devicePos),
         mid,
-        new THREE.Vector3(...supervisorPos),
+        new THREE.Vector3(...supervisorCenterPos),
       ];
     }
     case 'dispatch': {
-      // 中枢球体 → 目标 Agent
+      // 监管中枢本体中心 → Agent 球体
       const mid = new THREE.Vector3(
-        (supervisorPos[0] + agentPos[0]) / 2,
-        (supervisorPos[1] + agentPos[1]) / 2 + 25,
-        (supervisorPos[2] + agentPos[2]) / 2,
+        (supervisorCenterPos[0] + agentPos[0]) / 2,
+        Math.max(supervisorCenterPos[1], agentPos[1]) + 25,
+        (supervisorCenterPos[2] + agentPos[2]) / 2,
       );
       return [
-        new THREE.Vector3(...supervisorPos),
+        new THREE.Vector3(...supervisorCenterPos),
         mid,
         new THREE.Vector3(...agentPos),
       ];
     }
     case 'execute': {
-      // Agent → 设备
+      // Agent 球体 → 设备（侧向弧线，避免穿透球体）
+      // Agent 和设备的 x/y 几乎重合，垂直弧线会穿透球体
+      // 改为侧向偏移：沿垂直于飞行方向的侧边弧线飞行
+      const dx = agentPos[0] - devicePos[0];
+      const dz = agentPos[2] - devicePos[2];
+      const horizontalDist = Math.sqrt(dx * dx + dz * dz);
+      // 侧向偏移方向（垂直于飞行方向的水平分量）
+      const perpX = horizontalDist > 0.1 ? -dz / horizontalDist : 1;
+      const perpZ = horizontalDist > 0.1 ? dx / horizontalDist : 0;
+      const lateralOffset = 25; // 侧向弧线幅度
       const mid = new THREE.Vector3(
-        (agentPos[0] + devicePos[0]) / 2,
-        (agentPos[1] + devicePos[1]) / 2 + 10,
-        (agentPos[2] + devicePos[2]) / 2,
+        (agentPos[0] + devicePos[0]) / 2 + perpX * lateralOffset,
+        (agentPos[1] + devicePos[1]) / 2,
+        (agentPos[2] + devicePos[2]) / 2 + perpZ * lateralOffset,
       );
       return [
         new THREE.Vector3(...agentPos),
@@ -99,19 +153,19 @@ function buildPath(intent: ParticleIntent, targetAgentId: AgentId): THREE.Vector
 }
 
 /**
- * 生成 idle 背景粒子路径（围绕各 agent 的中枢缓慢巡回）
+ * 生成 idle 背景粒子路径
+ * 路径：监管中枢中心 → 各 Agent 球体（环绕巡检）
  */
 function buildIdlePaths(): THREE.Vector3[] {
   const agents: AgentId[] = ['dosing', 'uf', 'ro', 'pump'];
-  const supervisor = AGENT_3D_ANCHORS.supervisor;
-  const supervisorPos = toThreePosTuple(supervisor);
+  const supervisorCenter = getSupervisorCenter();
+  const supervisorPos = toThreePosTuple(supervisorCenter);
 
   const waypoints: THREE.Vector3[] = [new THREE.Vector3(...supervisorPos)];
 
   for (const id of agents) {
     const a = AGENT_3D_ANCHORS[id];
     const ap = toThreePosTuple(a);
-    // 中间浮空点
     waypoints.push(new THREE.Vector3(
       (supervisorPos[0] + ap[0]) / 2,
       Math.max(supervisorPos[1], ap[1]) + 15,
@@ -124,26 +178,33 @@ function buildIdlePaths(): THREE.Vector3[] {
 }
 
 /**
- * 粒子飞行系统
- * - anomaly: 设备→中枢（红，3 段贝塞尔式路径）
- * - dispatch: 中枢→专项Agent（橙）
- * - execute: Agent→设备（绿）
- * - idle: 低速巡回背景粒子
+ * 粒子飞行系统（升级版 V2）
+ *
+ * 渲染方案：InstancedMesh + PlaneGeometry + 自定义 ShaderMaterial
+ * 每个 instance 是一个面朝相机的发光圆点（通过 plane geometry + 径向渐变 shader）
+ * 比纯 pointsMaterial 大很多且自带 glow 效果
+ *
+ * 改进点：
+ * - InstancedMesh 批量渲染（60 粒子仅 1 draw call）
+ * - 自定义 shader 做径向渐变 + 中心高亮
+ * - 弧度加大（35），路径更明显
+ * - 呼吸缩放：粒子在弧线顶点处放大
  */
 export const ParticleSystem: React.FC = () => {
   const particleIntent = useScenarioStore((s) => s.particleIntent);
   const targetAgentId = useScenarioStore((s) => s.targetAgentId);
 
-  const pointsRef = useRef<THREE.Points>(null);
-  const animGeometryRef = useRef<THREE.BufferGeometry>(null);
-  const idleGeometryRef = useRef<THREE.BufferGeometry>(null);
+  const animMeshRef = useRef<THREE.InstancedMesh>(null);
+  const idleMeshRef = useRef<THREE.InstancedMesh>(null);
 
   const particlesRef = useRef<ParticleData[]>([]);
   const idleParticlesRef = useRef<ParticleData[]>([]);
   const pathSegmentsRef = useRef<THREE.Vector3[][]>([]);
 
-  const animPositions = useMemo(() => new Float32Array(PARTICLE_COUNT * 3), []);
-  const idlePositions = useMemo(() => new Float32Array(IDLE_COUNT * 3), []);
+  const dummy = useMemo(() => new THREE.Object3D(), []);
+
+  // idle 粒子材质（蓝色半透明光晕）
+  const idleMaterial = useMemo(() => makeGlowMaterial('#93c5fd', 0.4), []);
 
   // 初始化 idle 路径和粒子
   const idleWaypointsRef = useRef<THREE.Vector3[]>([]);
@@ -151,8 +212,8 @@ export const ParticleSystem: React.FC = () => {
     idleWaypointsRef.current = buildIdlePaths();
     idleParticlesRef.current = Array.from({ length: IDLE_COUNT }, () => ({
       progress: Math.random(),
-      speed: 0.02 + Math.random() * 0.04,
-      segmentIndex: 0,
+      speed: 0.03 + Math.random() * 0.08,
+      segmentIndex: Math.floor(Math.random() * 8),
     }));
   }, []);
 
@@ -162,29 +223,43 @@ export const ParticleSystem: React.FC = () => {
       const segments = buildPath(particleIntent, targetAgentId);
       pathSegmentsRef.current = [];
 
-      // 将 N 个 waypoint 拆成 N-1 个线段
       for (let i = 0; i < segments.length - 1; i++) {
         pathSegmentsRef.current.push([segments[i], segments[i + 1]]);
       }
 
       particlesRef.current = Array.from({ length: PARTICLE_COUNT }, () => ({
         progress: Math.random(),
-        speed: 0.12 + Math.random() * 0.4,
+        speed: 0.15 + Math.random() * 0.55,
         segmentIndex: 0,
       }));
     } else {
       particlesRef.current = [];
-      animPositions.fill(0);
-      if (animGeometryRef.current) {
-        animGeometryRef.current.attributes.position.needsUpdate = true;
+      pathSegmentsRef.current = [];
+      if (animMeshRef.current) {
+        for (let i = 0; i < PARTICLE_COUNT; i++) {
+          dummy.position.set(0, -500, 0);
+          dummy.scale.setScalar(0);
+          dummy.updateMatrix();
+          animMeshRef.current.setMatrixAt(i, dummy.matrix);
+        }
+        animMeshRef.current.instanceMatrix.needsUpdate = true;
       }
     }
-  }, [particleIntent, targetAgentId]);
+  }, [particleIntent, targetAgentId, dummy]);
 
-  // 每帧更新动画粒子位置
-  useFrame((_, delta) => {
+  // 动画粒子材质（根据 intent 颜色动态创建）
+  const animMaterial = useMemo(() => {
+    if (!particleIntent) return null;
+    const color = INTENT_COLORS[particleIntent];
+    return makeGlowMaterial(color, 0.85);
+  }, [particleIntent]);
+
+  // 每帧更新
+  useFrame((state, delta) => {
+    const camera = state.camera;
+
     // ── 动画粒子 ──
-    if (animGeometryRef.current && pathSegmentsRef.current.length > 0) {
+    if (animMeshRef.current && pathSegmentsRef.current.length > 0) {
       const parts = particlesRef.current;
       const segments = pathSegmentsRef.current;
 
@@ -194,7 +269,6 @@ export const ParticleSystem: React.FC = () => {
 
         if (p.progress > 1) {
           p.progress -= 1;
-          // 循环到下一段路径
           p.segmentIndex = (p.segmentIndex + 1) % segments.length;
         }
 
@@ -202,23 +276,29 @@ export const ParticleSystem: React.FC = () => {
         const from = seg[0];
         const to = seg[1];
         const t = p.progress;
-        const idx = i * 3;
 
-        // 弧线偏移
-        const midT = 0.5;
-        const arcHeight = 15;
+        // 弧线偏移（加大弧度）
+        const arcHeight = 35;
         const arc = 4 * arcHeight * t * (1 - t);
 
-        animPositions[idx] = from.x + (to.x - from.x) * t;
-        animPositions[idx + 1] = from.y + (to.y - from.y) * t + arc;
-        animPositions[idx + 2] = from.z + (to.z - from.z) * t;
-      }
+        const x = from.x + (to.x - from.x) * t;
+        const y = from.y + (to.y - from.y) * t + arc;
+        const z = from.z + (to.z - from.z) * t;
 
-      animGeometryRef.current.attributes.position.needsUpdate = true;
+        dummy.position.set(x, y, z);
+        // 面朝相机（billboard）
+        dummy.quaternion.copy(camera.quaternion);
+        // 呼吸缩放
+        const breathe = 8 + Math.sin(t * Math.PI) * 4;
+        dummy.scale.setScalar(breathe);
+        dummy.updateMatrix();
+        animMeshRef.current.setMatrixAt(i, dummy.matrix);
+      }
+      animMeshRef.current.instanceMatrix.needsUpdate = true;
     }
 
     // ── idle 背景粒子（始终运行）──
-    if (idleGeometryRef.current && idleWaypointsRef.current.length > 1) {
+    if (idleMeshRef.current && idleWaypointsRef.current.length > 1) {
       const waypoints = idleWaypointsRef.current;
       const parts = idleParticlesRef.current;
 
@@ -234,66 +314,34 @@ export const ParticleSystem: React.FC = () => {
         const from = waypoints[segIdx];
         const to = waypoints[segIdx + 1];
         const t = p.progress;
-        const idx = i * 3;
 
-        const arc = 6 * t * (1 - t);
-        idlePositions[idx] = from.x + (to.x - from.x) * t;
-        idlePositions[idx + 1] = from.y + (to.y - from.y) * t + arc;
-        idlePositions[idx + 2] = from.z + (to.z - from.z) * t;
+        const arc = 12 * t * (1 - t);
+        const x = from.x + (to.x - from.x) * t;
+        const y = from.y + (to.y - from.y) * t + arc;
+        const z = from.z + (to.z - from.z) * t;
+
+        dummy.position.set(x, y, z);
+        dummy.quaternion.copy(camera.quaternion);
+        dummy.scale.setScalar(5 + Math.sin(t * Math.PI) * 2);
+        dummy.updateMatrix();
+        idleMeshRef.current.setMatrixAt(i, dummy.matrix);
       }
-
-      idleGeometryRef.current.attributes.position.needsUpdate = true;
+      idleMeshRef.current.instanceMatrix.needsUpdate = true;
     }
   });
 
-  const activeColor = particleIntent
-    ? INTENT_COLORS[particleIntent]
-    : '#60a5fa';
-
   return (
     <>
-      {/* Idle particles — 始终渲染 */}
-      <points>
-        <bufferGeometry ref={idleGeometryRef}>
-          <bufferAttribute
-            attach="attributes-position"
-            count={IDLE_COUNT}
-            itemSize={3}
-            array={idlePositions}
-          />
-        </bufferGeometry>
-        <pointsMaterial
-          size={1.0}
-          color="#93c5fd"
-          sizeAttenuation
-          transparent
-          opacity={0.35}
-          blending={THREE.AdditiveBlending}
-          depthWrite={false}
-        />
-      </points>
+      {/* Idle 粒子 — 发光圆点 */}
+      <instancedMesh ref={idleMeshRef} args={[undefined, idleMaterial, IDLE_COUNT]}>
+        <planeGeometry args={[1, 1]} />
+      </instancedMesh>
 
-      {/* Active particles — 仅在 intent 时渲染 */}
-      {particleIntent && (
-        <points ref={pointsRef}>
-          <bufferGeometry ref={animGeometryRef}>
-            <bufferAttribute
-              attach="attributes-position"
-              count={PARTICLE_COUNT}
-              itemSize={3}
-              array={animPositions}
-            />
-          </bufferGeometry>
-          <pointsMaterial
-            size={2.5}
-            color={activeColor}
-            sizeAttenuation
-            transparent
-            opacity={0.85}
-            blending={THREE.AdditiveBlending}
-            depthWrite={false}
-          />
-        </points>
+      {/* Active 粒子 — 发光圆点 */}
+      {particleIntent && animMaterial && (
+        <instancedMesh ref={animMeshRef} args={[undefined, animMaterial, PARTICLE_COUNT]}>
+          <planeGeometry args={[1, 1]} />
+        </instancedMesh>
       )}
     </>
   );

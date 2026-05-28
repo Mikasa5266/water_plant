@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { useScenarioStore } from '../stores/useScenarioStore';
 import { AGENT_3D_ANCHORS } from '../data/constants';
-import { toThreePos } from './utils/coordinates';
+import { DEVICE_CENTERS, FOCUS_OFFSET } from './config';
+import { toThreePos, toThreePosTuple } from './utils/coordinates';
 import type { IncidentType, AgentId, CameraFocusTarget, ThinkingContent } from '../types/scenario';
 
 /** 4 个异常演练场景 */
@@ -86,11 +87,19 @@ const AnimationPreview: React.FC = () => {
 
   /* ── 摄像机聚焦 ── */
   const focusCamera = (agentId: AgentId, duration = 2000) => {
-    const anchor = AGENT_3D_ANCHORS[agentId];
-    const pos = toThreePos(anchor.x, anchor.y, anchor.z);
+    // 使用设备本体中心作为 lookAt 目标（非 Agent 球体）
+    const deviceCenter = DEVICE_CENTERS[agentId] ?? AGENT_3D_ANCHORS[agentId];
+    const lookAtPos = toThreePosTuple(deviceCenter);
+
+    // 计算相机位置：设备中心 + 侧上方偏移
+    const spread = FOCUS_OFFSET.positionMul;
     const target: CameraFocusTarget = {
-      position: [pos[0] + 20, pos[1] + 15, pos[2] + 25],
-      lookAt: [pos[0], pos[1], pos[2]],
+      position: [
+        lookAtPos[0] + spread,
+        lookAtPos[1] + FOCUS_OFFSET.heightMul,
+        lookAtPos[2] + FOCUS_OFFSET.depthMul,
+      ],
+      lookAt: [lookAtPos[0], lookAtPos[1], lookAtPos[2]],
       duration,
     };
     useScenarioStore.getState().setCameraFocus(target);
