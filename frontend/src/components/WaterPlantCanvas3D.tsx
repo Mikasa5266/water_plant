@@ -18,6 +18,7 @@ interface WaterPlantCanvas3DProps {
   setCamera: React.Dispatch<React.SetStateAction<{ yaw: number; pitch: number; zoom: number }>>;
   animationTick: number;
   toggleAgentCard: (agentId: AgentId) => void;
+  closeAgentCard?: (agentId: AgentId) => void;
   handleStartDrag: (e: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>, agentId: AgentId) => void;
   setAgentLogs: React.Dispatch<React.SetStateAction<Record<AgentId, any[]>>>;
   activeTab: 'model' | 'simulation_studio';
@@ -29,7 +30,7 @@ export const WaterPlantCanvas3D: React.FC<WaterPlantCanvas3DProps> = ({
   containerRef, telemetry, setTelemetry, simulation,
   agentStatuses, agentLogs, cards, setCards,
   camera, setCamera, animationTick,
-  toggleAgentCard, handleStartDrag, setAgentLogs,
+  toggleAgentCard, closeAgentCard, handleStartDrag, setAgentLogs,
   activeTab, activeAnim, triggerCalibrationAnimation
 }) => {
 
@@ -92,6 +93,7 @@ export const WaterPlantCanvas3D: React.FC<WaterPlantCanvas3DProps> = ({
             telemetry={telemetry}
             setTelemetry={setTelemetry}
             toggleAgentCard={toggleAgentCard}
+            closeAgentCard={closeAgentCard}
             handleStartDrag={handleStartDrag}
             setAgentLogs={setAgentLogs}
             triggerCalibrationAnimation={triggerCalibrationAnimation}

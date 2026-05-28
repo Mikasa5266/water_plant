@@ -75,6 +75,8 @@ export interface NotificationItem {
   description: string;
   time: string;
   agentId: AgentId;
+  relatedAgentIds?: AgentId[];
+  incidentCount?: number;
   level: 'info' | 'warning' | 'error' | 'success';
   autoDismissMs: number;
 }

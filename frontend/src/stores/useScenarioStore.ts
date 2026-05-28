@@ -105,6 +105,17 @@ const PHASE_ORDER: ScenarioPhase[] = [
   Phase.RECOVERED,
 ];
 
+const PHASE_TO_STEP_INDEX: Partial<Record<ScenarioPhase, number>> = {
+  [Phase.ANOMALY_DETECTED]: 0,
+  [Phase.SUPERVISOR_ANALYZING]: 2,
+  [Phase.DISPATCHING]: 3,
+  [Phase.AGENT_ANALYZING]: 3,
+  [Phase.EXECUTING]: 4,
+  [Phase.DEVICE_OPERATING]: 4,
+  [Phase.RECOVERING]: 4,
+  [Phase.RECOVERED]: 4,
+};
+
 // ─── 场景类型 → 目标 Agent 映射 ───
 
 const INCIDENT_TO_AGENT: Record<IncidentType, AgentId> = {
@@ -133,6 +144,8 @@ export const useScenarioStore = create<ScenarioState & ScenarioActions>((set, ge
   // ─── Actions ───
 
   startIncident: (type) => {
+    if (get().phase !== Phase.IDLE) return;
+
     const targetAgent = INCIDENT_TO_AGENT[type];
     set({
       phase: Phase.ANOMALY_DETECTED,
@@ -169,6 +182,15 @@ export const useScenarioStore = create<ScenarioState & ScenarioActions>((set, ge
       phaseStartTime: Date.now(),
     };
 
+    const activeStepIndex = PHASE_TO_STEP_INDEX[nextPhase];
+    if (activeStepIndex !== undefined) {
+      patch.decisionSteps = get().decisionSteps.map((step, index) => ({
+        ...step,
+        active: index === activeStepIndex,
+        completed: index < activeStepIndex || nextPhase === Phase.RECOVERED,
+      }));
+    }
+
     switch (nextPhase) {
       case Phase.ANOMALY_DETECTED:
         patch.particleIntent = 'anomaly';
@@ -200,7 +222,7 @@ export const useScenarioStore = create<ScenarioState & ScenarioActions>((set, ge
         break;
     }
 
-    set(patch as any);
+    set(patch);
   },
 
   forceIdle: () => {

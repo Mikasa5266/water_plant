@@ -86,6 +86,16 @@ export function useAgentCards(containerRef: React.RefObject<HTMLDivElement | nul
     }));
   };
 
+  const closeAgentCard = (agentId: AgentId) => {
+    setCards(prev => ({
+      ...prev,
+      [agentId]: {
+        ...prev[agentId],
+        isOpen: false
+      }
+    }));
+  };
+
   const resetCards = () => {
     setCards(DEFAULT_CARDS);
   };
@@ -97,6 +107,7 @@ export function useAgentCards(containerRef: React.RefObject<HTMLDivElement | nul
     setTopZIndex,
     handleStartDrag,
     toggleAgentCard,
+    closeAgentCard,
     resetCards
   };
 }

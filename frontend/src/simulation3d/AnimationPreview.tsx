@@ -6,10 +6,10 @@ import type { IncidentType, AgentId, CameraFocusTarget, ThinkingContent } from '
 
 /** 4 个异常演练场景 */
 const SCENARIOS: { type: IncidentType; label: string; color: string }[] = [
-  { type: 'dosing_abnormal', label: 'F1 加药异常', color: '#BA7517' },
-  { type: 'uf_clogging', label: 'F2 超滤堵塞', color: '#1D9E75' },
-  { type: 'ro_fouling', label: 'F3 RO污染', color: '#D85A30' },
-  { type: 'pump_overload', label: 'F4 泵组过载', color: '#534AB7' },
+  { type: 'dosing_abnormal', label: 'Ctrl+1 加药异常', color: '#BA7517' },
+  { type: 'uf_clogging', label: 'Ctrl+2 超滤堵塞', color: '#1D9E75' },
+  { type: 'ro_fouling', label: 'Ctrl+3 RO污染', color: '#D85A30' },
+  { type: 'pump_overload', label: 'Ctrl+4 泵组过载', color: '#534AB7' },
 ];
 
 const AGENTS: AgentId[] = ['supervisor', 'dosing', 'uf', 'ro', 'pump'];

@@ -19,6 +19,7 @@ export interface WindowManagerActions {
   resizeWindow: (agentId: AgentId, size: { width: number; height: number }) => void;
   closeAllWindows: () => void;
   getOpenWindows: () => WindowState[];
+  cycleWindow: (direction: 'next' | 'prev') => void;
 }
 
 const DEFAULT_WINDOW_SIZE = { width: 420, height: 520 };
@@ -50,6 +51,16 @@ const INITIAL_WINDOWS: Record<AgentId, WindowState> = {
   pump: createDefaultWindow('pump'),
 };
 
+function getNextActiveWindowId(windows: Record<AgentId, WindowState>): AgentId | null {
+  const visibleWindows = (Object.values(windows) as WindowState[]).filter(
+    (windowItem) => windowItem.isOpen && !windowItem.isMinimized
+  );
+
+  if (!visibleWindows.length) return null;
+
+  return visibleWindows.sort((a, b) => b.zIndex - a.zIndex)[0].agentId;
+}
+
 export const useWindowStore = create<WindowManagerState & WindowManagerActions>((set, get) => ({
   windows: { ...INITIAL_WINDOWS },
   activeWindowId: null,
@@ -77,23 +88,27 @@ export const useWindowStore = create<WindowManagerState & WindowManagerActions>(
 
   closeWindow: (agentId) => {
     const { windows, activeWindowId } = get();
+    const nextWindows = {
+      ...windows,
+      [agentId]: { ...windows[agentId], isOpen: false, isMinimized: false },
+    };
+
     set({
-      windows: {
-        ...windows,
-        [agentId]: { ...windows[agentId], isOpen: false, isMinimized: false },
-      },
-      activeWindowId: activeWindowId === agentId ? null : activeWindowId,
+      windows: nextWindows,
+      activeWindowId: activeWindowId === agentId ? getNextActiveWindowId(nextWindows) : activeWindowId,
     });
   },
 
   minimizeWindow: (agentId) => {
     const { windows, activeWindowId } = get();
+    const nextWindows = {
+      ...windows,
+      [agentId]: { ...windows[agentId], isMinimized: true },
+    };
+
     set({
-      windows: {
-        ...windows,
-        [agentId]: { ...windows[agentId], isMinimized: true },
-      },
-      activeWindowId: activeWindowId === agentId ? null : activeWindowId,
+      windows: nextWindows,
+      activeWindowId: activeWindowId === agentId ? getNextActiveWindowId(nextWindows) : activeWindowId,
     });
   },
 
@@ -103,7 +118,7 @@ export const useWindowStore = create<WindowManagerState & WindowManagerActions>(
     set({
       windows: {
         ...windows,
-        [agentId]: { ...windows[agentId], isMinimized: false, zIndex: newZ },
+        [agentId]: { ...windows[agentId], isOpen: true, isMinimized: false, zIndex: newZ },
       },
       activeWindowId: agentId,
       maxZIndex: newZ,
@@ -112,11 +127,13 @@ export const useWindowStore = create<WindowManagerState & WindowManagerActions>(
 
   focusWindow: (agentId) => {
     const { windows, maxZIndex } = get();
+    if (!windows[agentId].isOpen) return;
+
     const newZ = maxZIndex + 1;
     set({
       windows: {
         ...windows,
-        [agentId]: { ...windows[agentId], zIndex: newZ },
+        [agentId]: { ...windows[agentId], isMinimized: false, zIndex: newZ },
       },
       activeWindowId: agentId,
       maxZIndex: newZ,
@@ -147,10 +164,27 @@ export const useWindowStore = create<WindowManagerState & WindowManagerActions>(
     const reset = Object.fromEntries(
       Object.entries(INITIAL_WINDOWS).map(([id, win]) => [id, { ...win }])
     ) as Record<AgentId, WindowState>;
-    set({ windows: reset, activeWindowId: null });
+    set({ windows: reset, activeWindowId: null, maxZIndex: 10 });
   },
 
   getOpenWindows: () => {
     return (Object.values(get().windows) as WindowState[]).filter((w) => w.isOpen);
+  },
+
+  cycleWindow: (direction) => {
+    const { windows, activeWindowId } = get();
+    const visible = (Object.values(windows) as WindowState[])
+      .filter((w) => w.isOpen && !w.isMinimized)
+      .sort((a, b) => a.zIndex - b.zIndex);
+
+    if (visible.length < 2) return;
+
+    const currentIndex = visible.findIndex((w) => w.agentId === activeWindowId);
+    const nextIndex =
+      direction === 'next'
+        ? (currentIndex + 1) % visible.length
+        : (currentIndex - 1 + visible.length) % visible.length;
+
+    get().focusWindow(visible[nextIndex].agentId);
   },
 }));

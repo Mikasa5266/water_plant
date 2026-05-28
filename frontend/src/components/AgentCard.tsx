@@ -11,6 +11,7 @@ interface AgentCardProps {
   telemetry: TelemetryState;
   setTelemetry: React.Dispatch<React.SetStateAction<TelemetryState>>;
   toggleAgentCard: (id: AgentId) => void;
+  closeAgentCard?: (id: AgentId) => void;
   handleStartDrag: (e: React.MouseEvent | React.TouchEvent, id: AgentId) => void;
   setAgentLogs: React.Dispatch<React.SetStateAction<Record<AgentId, AgentLog[]>>>;
   triggerCalibrationAnimation: (agentId: AgentId) => void;
@@ -25,6 +26,7 @@ export const AgentCard: React.FC<AgentCardProps> = ({
   telemetry,
   setTelemetry,
   toggleAgentCard,
+  closeAgentCard,
   handleStartDrag,
   setAgentLogs,
   triggerCalibrationAnimation,
@@ -81,9 +83,24 @@ export const AgentCard: React.FC<AgentCardProps> = ({
             {statusText}
           </span>
           <button
-            onClick={() => toggleAgentCard(id)}
+            type="button"
+            onMouseDown={(event) => {
+              event.preventDefault();
+              event.stopPropagation();
+            }}
+            onTouchStart={(event) => {
+              event.preventDefault();
+              event.stopPropagation();
+            }}
+            onClick={(event) => {
+              event.preventDefault();
+              event.stopPropagation();
+              if (closeAgentCard) closeAgentCard(id);
+              else toggleAgentCard(id);
+            }}
             className="p-1 rounded text-slate-400 hover:text-white hover:bg-slate-850 transition-colors cursor-pointer"
-            title="最小化窗口"
+            title="关闭窗口"
+            aria-label={`关闭 ${item.name}`}
           >
             <X className="w-3.5 h-3.5" />
           </button>
@@ -130,7 +147,7 @@ export const AgentCard: React.FC<AgentCardProps> = ({
                   step="0.1"
                   value={telemetry.dosingRate} 
                   onChange={(e) => setTelemetry(prev => ({ ...prev, dosingRate: parseFloat(e.target.value) }))}
-                  className="w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-teal-400"
+                  className="theme-slider"
                 />
               </div>
             )}
@@ -151,7 +168,7 @@ export const AgentCard: React.FC<AgentCardProps> = ({
                   step="1"
                   value={telemetry.ufPressure} 
                   onChange={(e) => setTelemetry(prev => ({ ...prev, ufPressure: parseInt(e.target.value) }))}
-                  className="w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-teal-400"
+                  className="theme-slider"
                 />
               </div>
             )}
@@ -172,7 +189,7 @@ export const AgentCard: React.FC<AgentCardProps> = ({
                   step="0.5"
                   value={telemetry.roFlux} 
                   onChange={(e) => setTelemetry(prev => ({ ...prev, roFlux: parseFloat(e.target.value) }))}
-                  className="w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-teal-400"
+                  className="theme-slider"
                 />
               </div>
             )}
