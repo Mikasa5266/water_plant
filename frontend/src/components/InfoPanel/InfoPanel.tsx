@@ -1,5 +1,6 @@
 import type { AgentId, AgentUIStatus, DecisionStep, EventLogEntry, ThinkingContent } from '../../types/index';
 import { TypewriterText, TypewriterList } from './TypewriterText';
+import { DecisionChain } from './DecisionChain';
 
 export interface InfoPanelAgent {
   id: AgentId;
@@ -52,18 +53,7 @@ export function InfoPanel({ currentAgent, thinking, decisionSteps, events, class
 
       <section>
         <h2 className="text-xs font-semibold uppercase tracking-wide text-slate-400">Decision Chain</h2>
-        <ol className="mt-2 space-y-2">
-          {decisionSteps.map((step) => (
-            <li key={step.index} className="flex items-center gap-2 text-xs">
-              <span
-                className={`h-2 w-2 rounded-full ${
-                  step.completed ? 'bg-[var(--color-status-normal)]' : step.active ? 'bg-cyan-400' : 'bg-slate-700'
-                }`}
-              />
-              <span className={step.active ? 'text-cyan-100' : 'text-slate-400'}>{step.label}</span>
-            </li>
-          ))}
-        </ol>
+        <DecisionChain steps={decisionSteps} />
       </section>
 
       <section className="min-h-0 flex-1">

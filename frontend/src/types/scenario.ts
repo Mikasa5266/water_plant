@@ -49,6 +49,8 @@ export interface DecisionStep {
   label: string;
   active: boolean;
   completed: boolean;
+  confidence?: number;
+  estimatedDuration?: number;
 }
 
 // ─── 事件日志条目 ───
