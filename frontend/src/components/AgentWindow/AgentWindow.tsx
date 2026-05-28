@@ -1,3 +1,4 @@
+import { useCallback, useRef } from 'react';
 import type { AgentId, AgentUIStatus, MetricField, NormalRange } from '../../types/index';
 
 export interface AgentWindowProps {
@@ -15,6 +16,8 @@ export interface AgentWindowProps {
   onFocus: (agentId: AgentId) => void;
   onMinimize: (agentId: AgentId) => void;
   onClose: (agentId: AgentId) => void;
+  onMove: (agentId: AgentId, position: { x: number; y: number }) => void;
+  onResize: (agentId: AgentId, size: { width: number; height: number }) => void;
   className?: string;
 }
 
@@ -48,8 +51,99 @@ export function AgentWindow({
   onFocus,
   onMinimize,
   onClose,
+  onMove,
+  onResize,
   className = '',
 }: AgentWindowProps) {
+  const dragStartRef = useRef<{
+    pointerId: number;
+    originX: number;
+    originY: number;
+    startX: number;
+    startY: number;
+  } | null>(null);
+  const resizeStartRef = useRef<{
+    pointerId: number;
+    originX: number;
+    originY: number;
+    startWidth: number;
+    startHeight: number;
+  } | null>(null);
+
+  const handleDragStart = useCallback(
+    (event: React.PointerEvent<HTMLElement>) => {
+      if (event.button !== 0) return;
+
+      event.currentTarget.setPointerCapture(event.pointerId);
+      onFocus(agentId);
+      dragStartRef.current = {
+        pointerId: event.pointerId,
+        originX: event.clientX,
+        originY: event.clientY,
+        startX: position.x,
+        startY: position.y,
+      };
+    },
+    [agentId, onFocus, position.x, position.y]
+  );
+
+  const handleDragMove = useCallback(
+    (event: React.PointerEvent<HTMLElement>) => {
+      const dragStart = dragStartRef.current;
+      if (!dragStart || dragStart.pointerId !== event.pointerId) return;
+
+      onMove(agentId, {
+        x: Math.max(80, dragStart.startX + event.clientX - dragStart.originX),
+        y: Math.max(48, dragStart.startY + event.clientY - dragStart.originY),
+      });
+    },
+    [agentId, onMove]
+  );
+
+  const handleDragEnd = useCallback((event: React.PointerEvent<HTMLElement>) => {
+    if (dragStartRef.current?.pointerId === event.pointerId) {
+      dragStartRef.current = null;
+    }
+  }, []);
+
+  const handleResizeStart = useCallback(
+    (event: React.PointerEvent<HTMLButtonElement>) => {
+      if (event.button !== 0) return;
+
+      event.preventDefault();
+      event.stopPropagation();
+      event.currentTarget.setPointerCapture(event.pointerId);
+      onFocus(agentId);
+      resizeStartRef.current = {
+        pointerId: event.pointerId,
+        originX: event.clientX,
+        originY: event.clientY,
+        startWidth: size.width,
+        startHeight: size.height,
+      };
+    },
+    [agentId, onFocus, size.height, size.width]
+  );
+
+  const handleResizeMove = useCallback(
+    (event: React.PointerEvent<HTMLButtonElement>) => {
+      const resizeStart = resizeStartRef.current;
+      if (!resizeStart || resizeStart.pointerId !== event.pointerId) return;
+
+      onResize(agentId, {
+        width: Math.max(360, resizeStart.startWidth + event.clientX - resizeStart.originX),
+        height: Math.max(420, resizeStart.startHeight + event.clientY - resizeStart.originY),
+      });
+    },
+    [agentId, onResize]
+  );
+
+  const handleResizeEnd = useCallback((event: React.PointerEvent<HTMLButtonElement>) => {
+    if (resizeStartRef.current?.pointerId === event.pointerId) {
+      resizeStartRef.current = null;
+    }
+  }, []);
+
   if (isMinimized) return null;
 
   const tone = statusTone[status];
@@ -69,7 +163,13 @@ export function AgentWindow({
       onMouseDown={() => onFocus(agentId)}
       aria-label={`${title} agent window`}
     >
-      <header className={`flex items-center justify-between px-3 py-2 ${tone.title}`}>
+      <header
+        className={`flex cursor-move touch-none items-center justify-between px-3 py-2 ${tone.title}`}
+        onPointerDown={handleDragStart}
+        onPointerMove={handleDragMove}
+        onPointerUp={handleDragEnd}
+        onPointerCancel={handleDragEnd}
+      >
         <div className="flex min-w-0 items-center gap-2">
           <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${tone.dot}`} />
           <div className="min-w-0">
@@ -80,7 +180,13 @@ export function AgentWindow({
         <div className="flex items-center gap-1">
           <button
             type="button"
-            onClick={() => onMinimize(agentId)}
+            onPointerDown={(event) => {
+              event.stopPropagation();
+            }}
+            onClick={(event) => {
+              event.stopPropagation();
+              onMinimize(agentId);
+            }}
             className="h-7 w-7 rounded text-slate-300 hover:bg-slate-800"
             aria-label={`Minimize ${title}`}
           >
@@ -88,7 +194,13 @@ export function AgentWindow({
           </button>
           <button
             type="button"
-            onClick={() => onClose(agentId)}
+            onPointerDown={(event) => {
+              event.stopPropagation();
+            }}
+            onClick={(event) => {
+              event.stopPropagation();
+              onClose(agentId);
+            }}
             className="h-7 w-7 rounded text-slate-300 hover:bg-slate-800"
             aria-label={`Close ${title}`}
           >
@@ -119,6 +231,17 @@ export function AgentWindow({
       <footer className="absolute inset-x-0 bottom-0 border-t border-slate-800 bg-slate-900/80 px-3 py-2 text-xs text-slate-300">
         {footerText}
       </footer>
+      <button
+        type="button"
+        className="absolute bottom-0 right-0 h-5 w-5 cursor-nwse-resize touch-none rounded-tl border-l border-t border-slate-700 bg-slate-800/80 text-[10px] text-slate-400"
+        aria-label={`Resize ${title}`}
+        onPointerDown={handleResizeStart}
+        onPointerMove={handleResizeMove}
+        onPointerUp={handleResizeEnd}
+        onPointerCancel={handleResizeEnd}
+      >
+        /
+      </button>
     </section>
   );
 }

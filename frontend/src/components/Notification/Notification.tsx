@@ -1,3 +1,4 @@
+import { X } from 'lucide-react';
 import type { AgentId, NotificationItem } from '../../types/index';
 
 export interface NotificationProps {
@@ -20,7 +21,20 @@ export function Notification({ notifications, onDismiss, onOpenAgent, className 
       {notifications.map((notification) => (
         <article
           key={notification.id}
-          className={`pointer-events-auto rounded-lg border-l-4 bg-slate-950/95 p-3 text-slate-100 shadow-xl ${levelClassName[notification.level]}`}
+          className={`pointer-events-auto cursor-pointer rounded-lg border-l-4 bg-slate-950/95 p-3 text-slate-100 shadow-xl transition-transform hover:-translate-y-0.5 ${levelClassName[notification.level]}`}
+          onClick={() => {
+            onOpenAgent(notification.agentId);
+            onDismiss(notification.id);
+          }}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter' || event.key === ' ') {
+              event.preventDefault();
+              onOpenAgent(notification.agentId);
+              onDismiss(notification.id);
+            }
+          }}
         >
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
@@ -30,20 +44,17 @@ export function Notification({ notifications, onDismiss, onOpenAgent, className 
             </div>
             <button
               type="button"
-              onClick={() => onDismiss(notification.id)}
+              onClick={(event) => {
+                event.stopPropagation();
+                onDismiss(notification.id);
+              }}
               className="h-7 w-7 shrink-0 rounded text-slate-400 hover:bg-slate-800 hover:text-slate-100"
               aria-label={`Dismiss ${notification.title}`}
             >
-              x
+              <X className="mx-auto h-4 w-4" />
             </button>
           </div>
-          <button
-            type="button"
-            onClick={() => onOpenAgent(notification.agentId)}
-            className="mt-3 rounded border border-slate-700 px-2 py-1 text-xs text-slate-200 hover:border-cyan-400"
-          >
-            View detail
-          </button>
+          <p className="mt-3 text-xs font-medium text-cyan-200">查看详情</p>
         </article>
       ))}
     </div>

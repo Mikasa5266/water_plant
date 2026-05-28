@@ -50,6 +50,16 @@ const INITIAL_WINDOWS: Record<AgentId, WindowState> = {
   pump: createDefaultWindow('pump'),
 };
 
+function getNextActiveWindowId(windows: Record<AgentId, WindowState>): AgentId | null {
+  const visibleWindows = (Object.values(windows) as WindowState[]).filter(
+    (windowItem) => windowItem.isOpen && !windowItem.isMinimized
+  );
+
+  if (!visibleWindows.length) return null;
+
+  return visibleWindows.sort((a, b) => b.zIndex - a.zIndex)[0].agentId;
+}
+
 export const useWindowStore = create<WindowManagerState & WindowManagerActions>((set, get) => ({
   windows: { ...INITIAL_WINDOWS },
   activeWindowId: null,
@@ -77,23 +87,27 @@ export const useWindowStore = create<WindowManagerState & WindowManagerActions>(
 
   closeWindow: (agentId) => {
     const { windows, activeWindowId } = get();
+    const nextWindows = {
+      ...windows,
+      [agentId]: { ...windows[agentId], isOpen: false, isMinimized: false },
+    };
+
     set({
-      windows: {
-        ...windows,
-        [agentId]: { ...windows[agentId], isOpen: false, isMinimized: false },
-      },
-      activeWindowId: activeWindowId === agentId ? null : activeWindowId,
+      windows: nextWindows,
+      activeWindowId: activeWindowId === agentId ? getNextActiveWindowId(nextWindows) : activeWindowId,
     });
   },
 
   minimizeWindow: (agentId) => {
     const { windows, activeWindowId } = get();
+    const nextWindows = {
+      ...windows,
+      [agentId]: { ...windows[agentId], isMinimized: true },
+    };
+
     set({
-      windows: {
-        ...windows,
-        [agentId]: { ...windows[agentId], isMinimized: true },
-      },
-      activeWindowId: activeWindowId === agentId ? null : activeWindowId,
+      windows: nextWindows,
+      activeWindowId: activeWindowId === agentId ? getNextActiveWindowId(nextWindows) : activeWindowId,
     });
   },
 
@@ -149,7 +163,7 @@ export const useWindowStore = create<WindowManagerState & WindowManagerActions>(
     const reset = Object.fromEntries(
       Object.entries(INITIAL_WINDOWS).map(([id, win]) => [id, { ...win }])
     ) as Record<AgentId, WindowState>;
-    set({ windows: reset, activeWindowId: null });
+    set({ windows: reset, activeWindowId: null, maxZIndex: 10 });
   },
 
   getOpenWindows: () => {

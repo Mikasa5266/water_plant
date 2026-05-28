@@ -73,8 +73,23 @@ export interface SystemActions {
 
 let eventIdCounter = 0;
 let notificationIdCounter = 0;
+let notificationTimer: ReturnType<typeof setTimeout> | null = null;
 
 const MAX_EVENT_LOG_SIZE = 20;
+const ERROR_DISMISS_MS = 5000;
+const RECOVERY_DISMISS_MS = 2000;
+
+function getDefaultDismissMs(level: NotificationItem['level']) {
+  return level === 'success' ? RECOVERY_DISMISS_MS : ERROR_DISMISS_MS;
+}
+
+function scheduleDismiss(id: string, autoDismissMs: number, dismiss: (id: string) => void) {
+  if (notificationTimer) clearTimeout(notificationTimer);
+  notificationTimer = setTimeout(() => {
+    dismiss(id);
+    notificationTimer = null;
+  }, autoDismissMs);
+}
 
 export const useSystemStore = create<SystemState & SystemActions>((set, get) => ({
   // 初始状态
@@ -108,18 +123,50 @@ export const useSystemStore = create<SystemState & SystemActions>((set, get) => 
 
   pushNotification: (notification) => {
     const id = `notif_${++notificationIdCounter}_${Date.now()}`;
-    set((state) => ({
-      notifications: [...state.notifications, { ...notification, id }],
-    }));
+    const autoDismissMs = notification.autoDismissMs ?? getDefaultDismissMs(notification.level);
+
+    let nextNotification: NotificationItem = { ...notification, id, autoDismissMs };
+    const current = get().notifications[0];
+
+    if (notification.level === 'error' && current?.level === 'error') {
+      const relatedAgentIds = Array.from(
+        new Set([...(current.relatedAgentIds ?? [current.agentId]), ...(notification.relatedAgentIds ?? [notification.agentId])])
+      );
+      const incidentCount = relatedAgentIds.length;
+      nextNotification = {
+        ...nextNotification,
+        agentId: incidentCount > 1 ? 'supervisor' : notification.agentId,
+        relatedAgentIds,
+        incidentCount,
+        title: incidentCount > 1 ? `${incidentCount} 个异常` : notification.title,
+        description:
+          incidentCount > 1
+            ? `检测到 ${incidentCount} 个 Agent 异常并发，监管智能体已合并处理。`
+            : notification.description,
+      };
+    }
+
+    set({ notifications: [nextNotification] });
+    scheduleDismiss(nextNotification.id, nextNotification.autoDismissMs, get().dismissNotification);
   },
 
   dismissNotification: (id) => {
+    if (notificationTimer) {
+      clearTimeout(notificationTimer);
+      notificationTimer = null;
+    }
     set((state) => ({
       notifications: state.notifications.filter((n) => n.id !== id),
     }));
   },
 
-  clearNotifications: () => set({ notifications: [] }),
+  clearNotifications: () => {
+    if (notificationTimer) {
+      clearTimeout(notificationTimer);
+      notificationTimer = null;
+    }
+    set({ notifications: [] });
+  },
 
   updateFps: (fps) => {
     const prev = get().lodLevel;
