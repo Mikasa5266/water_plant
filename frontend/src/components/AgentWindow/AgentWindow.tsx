@@ -1,6 +1,7 @@
 import { useCallback, useRef } from 'react';
 import { motion } from 'motion/react';
-import type { AgentId, AgentUIStatus, MetricField, NormalRange } from '../../types/index';
+import type { AgentId, AgentUIStatus, MetricField } from '../../types/index';
+import { MetricCard } from './MetricCard';
 
 export interface AgentWindowProps {
   agentId: AgentId;
@@ -29,13 +30,6 @@ const statusTone: Record<AgentUIStatus, { dot: string; title: string; label: str
   recovering: { dot: 'bg-teal-400', title: 'bg-emerald-950/70', label: 'Recovering' },
 };
 
-function formatRange(range: NormalRange): string {
-  if (!range) return 'No range';
-  if (Array.isArray(range)) return range.join(' / ');
-  if ('min' in range && 'max' in range) return `${range.min}-${range.max}`;
-  if ('min' in range) return `>= ${range.min}`;
-  return `<= ${range.max}`;
-}
 
 export function AgentWindow({
   agentId,
@@ -221,14 +215,7 @@ export function AgentWindow({
 
         <div className="grid grid-cols-2 gap-2">
           {metrics.map((metric) => (
-            <article key={metric.key} className="rounded-[var(--radius-card)] border border-[var(--color-border-default)] bg-slate-900/60 p-2">
-              <p className="truncate text-[11px] text-slate-400">{metric.label}</p>
-              <p className="mt-1 text-sm font-semibold text-slate-100">
-                {metric.value}
-                {metric.unit ? <span className="ml-1 text-xs text-slate-400">{metric.unit}</span> : null}
-              </p>
-              <p className="mt-1 truncate text-[10px] text-slate-500">{formatRange(metric.normalRange)}</p>
-            </article>
+            <MetricCard key={metric.key} metric={metric} />
           ))}
         </div>
       </div>

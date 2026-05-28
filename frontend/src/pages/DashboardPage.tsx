@@ -10,10 +10,10 @@ import { usePhaseEffects } from '../hooks/usePhaseEffects';
 import { useAgentState } from '../features/agents/useAgentState';
 import { useAgentCards } from '../features/agents/useAgentCards';
 import { useSimulation } from '../features/simulation/useSimulation';
+import { useAutoDemo } from '../features/simulation/useAutoDemo';
 import { AGENT_ORDER, AGENT_WINDOW_DATA } from '../data/agentWindowData';
 import { DEMO_SNAPSHOTS, type DemoState } from '../data/demoSnapshots';
 import { HeaderHUD } from '../components/HeaderHUD';
-import { BottomTimeline } from '../components/BottomTimeline';
 import { AgentWindow } from '../components/AgentWindow';
 import { Dock } from '../components/Dock';
 import { HelpOverlay, type HelpShortcutItem } from '../components/HelpOverlay';
@@ -21,6 +21,7 @@ import { InfoPanel } from '../components/InfoPanel';
 import { Notification } from '../components/Notification';
 import { Taskbar } from '../components/Taskbar';
 import { DemoControlPanel } from '../components/DemoControlPanel';
+import type { SpeedMultiplier } from '../components/DemoControlPanel';
 import { ParameterControlSidebar } from '../components/ParameterControlSidebar';
 import { WaterPlantCanvas3D } from '../components/WaterPlantCanvas3D';
 import { useScenarioStore } from '../stores/useScenarioStore';
@@ -98,6 +99,7 @@ export default function DashboardPage() {
   const [pulsingAgentId, setPulsingAgentId] = useState<AgentId | null>(null);
   const [windowStatusText, setWindowStatusText] = useState('');
   const [demoState, setDemoState] = useState<DemoState>('normal');
+  const [demoSpeed, setDemoSpeed] = useState<SpeedMultiplier>(1);
 
   const { animationTick, animationTickRef } = useAnimationLoop();
   const currentTime = useClock();
@@ -126,6 +128,14 @@ export default function DashboardPage() {
     setAgentLogs,
     setCards,
   });
+
+  const autoDemo = useAutoDemo({
+    triggerSimulationIncident,
+    resetToNormal,
+    setIsPlaying,
+    simulationActive: simulation.active,
+    simulationStep: simulation.step,
+  }, { loop: false, stepInterval: 4000 / demoSpeed });
 
   const windows = useWindowStore((state) => state.windows);
   const activeWindowId = useWindowStore((state) => state.activeWindowId);
@@ -245,8 +255,7 @@ export default function DashboardPage() {
   const handleAutoDemo = () => {
     if (simulation.active) return;
     setDemoState('abnormal');
-    triggerSimulationIncident('dosing_abnormal');
-    setIsPlaying(true);
+    autoDemo.startAutoDemo();
   };
 
   useKeyboard({
@@ -268,9 +277,7 @@ export default function DashboardPage() {
 
   usePhaseEffects({
     onPulsingAgentChange: setPulsingAgentId,
-    onInfoPanelAgentSwitch: (agentId) => {
-      openWindow(agentId);
-    },
+    onInfoPanelAgentSwitch: () => {},
     onWindowStatusText: setWindowStatusText,
   });
 
@@ -463,13 +470,6 @@ export default function DashboardPage() {
               )}
             </div>
 
-            <BottomTimeline
-              simulation={simulation}
-              isPlaying={isPlaying}
-              setIsPlaying={setIsPlaying}
-              triggerSimulationIncident={handleTriggerIncident}
-              runStepChange={runStepChange}
-            />
           </section>
 
           <InfoPanel
@@ -536,12 +536,35 @@ export default function DashboardPage() {
         ) : null}
 
         <DemoControlPanel
-          currentState={demoState}
           isSimulationActive={simulation.active}
-          onTriggerAbnormal={handleDemoAbnormal}
-          onResetNormal={handleDemoNormal}
-          onApplyRecovered={handleDemoRecovered}
-          onAutoDemo={handleAutoDemo}
+          simulationStep={simulation.step}
+          totalSteps={8}
+          simulationTitle={simulation.title}
+          autoDemoStatus={autoDemo.status}
+          onStartAutoDemo={(scenarioId) => {
+            setDemoState('abnormal');
+            autoDemo.startAutoDemo(scenarioId);
+          }}
+          onPauseAutoDemo={autoDemo.pause}
+          onResumeAutoDemo={autoDemo.resume}
+          onStopAutoDemo={() => {
+            autoDemo.stop();
+            setDemoState('normal');
+          }}
+          onTriggerManual={(scenarioId) => {
+            if (simulation.active) return;
+            setDemoState('abnormal');
+            triggerSimulationIncident(scenarioId);
+            setTimeout(() => setIsPlaying(false), 500);
+          }}
+          onNextStep={() => {
+            if (simulation.active && simulation.step < 8) {
+              runStepChange(simulation.step + 1);
+            }
+          }}
+          onReset={handleDemoNormal}
+          onSpeedChange={setDemoSpeed}
+          currentSpeed={demoSpeed}
         />
 
         <Taskbar
