@@ -211,7 +211,9 @@ export const useScenarioStore = create<ScenarioState & ScenarioActions>((set, ge
       case Phase.AGENT_ANALYZING:
         patch.particleIntent = null;
         patch.activeAgentId = targetAgentId;
-        // 命令下发：目标 Agent 变 warning（橙色），设备继续闪红
+        // 命令已下发：Agent 接手，停止设备闪红
+        patch.deviceFlashing = null;
+        // 目标 Agent 变 warning（橙色）
         if (targetAgentId) {
           patch.agentRunStatuses = {
             ...INITIAL_RUN_STATUSES,
@@ -222,7 +224,7 @@ export const useScenarioStore = create<ScenarioState & ScenarioActions>((set, ge
         break;
       case Phase.EXECUTING: {
         patch.particleIntent = 'execute';
-        // Agent 进入执行状态（绿色），设备继续闪红
+        // Agent 进入执行状态（绿色），设备不闪红
         if (targetAgentId) {
           patch.agentRunStatuses = {
             ...INITIAL_RUN_STATUSES,
@@ -246,8 +248,6 @@ export const useScenarioStore = create<ScenarioState & ScenarioActions>((set, ge
       }
       case Phase.DEVICE_OPERATING:
         patch.particleIntent = null;
-        // 执行阶段结束，停止设备闪红
-        patch.deviceFlashing = null;
         // Agent 保持 executing 状态（设备操作中）
         if (targetAgentId) {
           patch.agentRunStatuses = {

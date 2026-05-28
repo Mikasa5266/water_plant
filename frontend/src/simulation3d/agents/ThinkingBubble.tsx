@@ -1,20 +1,19 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Html } from '@react-three/drei';
 import { useScenarioStore } from '../../stores/useScenarioStore';
 import { AGENT_3D_ANCHORS } from '../../data/constants';
-import { SCENE_SCALE } from '../config';
 import type { AgentId, ThinkingContent } from '../../types';
 import { toThreePos } from '../utils/coordinates';
 
 /**
- * 3D 思考气泡（HTML overlay）
+ * 3D 思考气泡（屏幕空间固定尺寸 HTML overlay）
  * 出现在 Agent 上方，打字机效果逐条显示 AI 推理要点
  * 位置跟随 thinkingAgentId 对应的 3D 锚点
  *
  * 尺寸策略：
- * - distanceFactor 设为较大值（25），确保远距离仍可读
- * - fontSize/padding 放大，增强屏幕可读性
- * - 内容采用短句格式（问题/方案），信息密度高
+ * - 不使用 distanceFactor，气泡保持固定屏幕像素大小
+ * - 无论相机远近，字体始终清晰可读
+ * - 内容采用短句格式（问题/分析/方案），信息密度高
  */
 export const ThinkingBubble: React.FC = () => {
   const thinking = useScenarioStore((s) => s.thinking);
@@ -38,7 +37,7 @@ const ThinkingBubbleContent: React.FC<{
   const anchor = AGENT_3D_ANCHORS[agentId];
   const pos = toThreePos(anchor.x, anchor.y, anchor.z);
 
-  // 气泡悬浮在 agent 上方 5 单位
+  // 气泡悬浮在 agent 上方 8 单位（scale 内坐标）
   const bubblePos: [number, number, number] = [pos[0], pos[1] + 8, pos[2]];
 
   // 打字机效果
@@ -57,7 +56,6 @@ const ThinkingBubbleContent: React.FC<{
 
     const point = thinking.points[currentIndex];
     if (currentChar >= point.length) {
-      // 当前条目完成，延迟后进入下一条
       const timer = setTimeout(() => {
         setCurrentIndex((i) => i + 1);
         setCurrentChar(0);
@@ -80,29 +78,29 @@ const ThinkingBubbleContent: React.FC<{
     <Html
       position={bubblePos}
       center
-      distanceFactor={25}
+      /* 不设 distanceFactor → 屏幕空间固定尺寸，不受距离缩放 */
       style={{ pointerEvents: 'auto' }}
     >
       <div
         style={{
-          background: 'rgba(15, 23, 42, 0.95)',
-          border: '1px solid rgba(56, 189, 248, 0.5)',
-          borderRadius: 12,
-          padding: '14px 18px',
-          minWidth: 260,
-          maxWidth: 380,
+          background: 'rgba(10, 18, 32, 0.92)',
+          border: '1.5px solid rgba(56, 189, 248, 0.5)',
+          borderRadius: 10,
+          padding: '12px 16px',
+          minWidth: 240,
+          maxWidth: 340,
           color: '#e2e8f0',
           fontFamily:
             '-apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif',
-          fontSize: 15,
-          lineHeight: 1.6,
+          fontSize: 14,
+          lineHeight: 1.65,
           pointerEvents: 'auto',
           cursor: 'pointer',
-          backdropFilter: 'blur(12px)',
-          boxShadow: '0 4px 30px rgba(56, 189, 248, 0.2)',
+          backdropFilter: 'blur(10px)',
+          boxShadow: '0 4px 24px rgba(0, 0, 0, 0.4), 0 0 20px rgba(56, 189, 248, 0.12)',
           position: 'relative',
-          transform: 'scale(1.1)', // 全局放大 10% 确保可读性
-          transformOrigin: 'center bottom',
+          userSelect: 'none',
+          whiteSpace: 'nowrap',
         }}
         title="点击关闭"
         onClick={() => {
@@ -113,25 +111,26 @@ const ThinkingBubbleContent: React.FC<{
         <div
           style={{
             position: 'absolute',
-            bottom: -9,
+            bottom: -8,
             left: '50%',
             transform: 'translateX(-50%)',
             width: 0,
             height: 0,
-            borderLeft: '10px solid transparent',
-            borderRight: '10px solid transparent',
-            borderTop: '10px solid rgba(15, 23, 42, 0.95)',
+            borderLeft: '8px solid transparent',
+            borderRight: '8px solid transparent',
+            borderTop: '8px solid rgba(10, 18, 32, 0.92)',
           }}
         />
         {/* 标题 */}
         <div
           style={{
             color: '#38bdf8',
-            fontWeight: 'bold',
-            fontSize: 16,
-            marginBottom: 8,
-            borderBottom: '1px solid rgba(56, 189, 248, 0.25)',
-            paddingBottom: 6,
+            fontWeight: 600,
+            fontSize: 14,
+            marginBottom: 6,
+            paddingBottom: 5,
+            borderBottom: '1px solid rgba(56, 189, 248, 0.2)',
+            whiteSpace: 'nowrap',
           }}
         >
           {thinking.title}
@@ -143,10 +142,12 @@ const ThinkingBubbleContent: React.FC<{
             key={i}
             style={{
               color: i === currentIndex ? '#f1f5f9' : '#94a3b8',
-              paddingLeft: 10,
-              borderLeft: '2px solid rgba(56, 189, 248, 0.4)',
-              marginBottom: 4,
-              fontSize: 14,
+              paddingLeft: 8,
+              borderLeft: '2px solid rgba(56, 189, 248, 0.35)',
+              marginBottom: 3,
+              fontSize: 13,
+              lineHeight: 1.6,
+              whiteSpace: 'nowrap',
             }}
           >
             {displayedPoints[i] ?? ''}
@@ -155,10 +156,10 @@ const ThinkingBubbleContent: React.FC<{
                 <span
                   style={{
                     display: 'inline-block',
-                    width: 2,
-                    height: 14,
+                    width: 1.5,
+                    height: 13,
                     background: '#38bdf8',
-                    marginLeft: 2,
+                    marginLeft: 1,
                     verticalAlign: 'middle',
                     animation: 'blink 0.7s infinite',
                   }}
