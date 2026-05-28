@@ -10,6 +10,7 @@ import { usePhaseEffects } from '../hooks/usePhaseEffects';
 import { useAgentState } from '../features/agents/useAgentState';
 import { useAgentCards } from '../features/agents/useAgentCards';
 import { useSimulation } from '../features/simulation/useSimulation';
+import { useAutoDemo } from '../features/simulation/useAutoDemo';
 import { AGENT_ORDER, AGENT_WINDOW_DATA } from '../data/agentWindowData';
 import { DEMO_SNAPSHOTS, type DemoState } from '../data/demoSnapshots';
 import { HeaderHUD } from '../components/HeaderHUD';
@@ -126,6 +127,14 @@ export default function DashboardPage() {
     setAgentLogs,
     setCards,
   });
+
+  const autoDemo = useAutoDemo({
+    triggerSimulationIncident,
+    resetToNormal,
+    setIsPlaying,
+    simulationActive: simulation.active,
+    simulationStep: simulation.step,
+  }, { loop: false });
 
   const windows = useWindowStore((state) => state.windows);
   const activeWindowId = useWindowStore((state) => state.activeWindowId);
@@ -245,8 +254,7 @@ export default function DashboardPage() {
   const handleAutoDemo = () => {
     if (simulation.active) return;
     setDemoState('abnormal');
-    triggerSimulationIncident('dosing_abnormal');
-    setIsPlaying(true);
+    autoDemo.startAutoDemo();
   };
 
   useKeyboard({
