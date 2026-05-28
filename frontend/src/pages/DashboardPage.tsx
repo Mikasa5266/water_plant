@@ -14,7 +14,6 @@ import { useAutoDemo } from '../features/simulation/useAutoDemo';
 import { AGENT_ORDER, AGENT_WINDOW_DATA } from '../data/agentWindowData';
 import { DEMO_SNAPSHOTS, type DemoState } from '../data/demoSnapshots';
 import { HeaderHUD } from '../components/HeaderHUD';
-import { BottomTimeline } from '../components/BottomTimeline';
 import { AgentWindow } from '../components/AgentWindow';
 import { Dock } from '../components/Dock';
 import { HelpOverlay, type HelpShortcutItem } from '../components/HelpOverlay';
@@ -278,9 +277,7 @@ export default function DashboardPage() {
 
   usePhaseEffects({
     onPulsingAgentChange: setPulsingAgentId,
-    onInfoPanelAgentSwitch: (agentId) => {
-      openWindow(agentId);
-    },
+    onInfoPanelAgentSwitch: () => {},
     onWindowStatusText: setWindowStatusText,
   });
 
@@ -473,13 +470,6 @@ export default function DashboardPage() {
               )}
             </div>
 
-            <BottomTimeline
-              simulation={simulation}
-              isPlaying={isPlaying}
-              setIsPlaying={setIsPlaying}
-              triggerSimulationIncident={handleTriggerIncident}
-              runStepChange={runStepChange}
-            />
           </section>
 
           <InfoPanel
