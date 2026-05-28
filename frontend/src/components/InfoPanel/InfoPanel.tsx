@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react';
 import type { AgentId, AgentUIStatus, DecisionStep, EventLogEntry, ThinkingContent } from '../../types/index';
 import { TypewriterText, TypewriterList } from './TypewriterText';
 import { DecisionChain } from './DecisionChain';
@@ -17,6 +18,14 @@ export interface InfoPanelProps {
 }
 
 export function InfoPanel({ currentAgent, thinking, decisionSteps, events, className = '' }: InfoPanelProps) {
+  const thinkingRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (thinkingRef.current) {
+      thinkingRef.current.scrollTop = thinkingRef.current.scrollHeight;
+    }
+  }, [thinking]);
+
   return (
     <aside className={`flex flex-col gap-[var(--spacing-gap)] border-l border-[var(--color-border-default)] bg-[var(--color-surface-overlay)] p-[var(--spacing-panel)] text-slate-100 ${className}`}>
       <section>
@@ -34,7 +43,7 @@ export function InfoPanel({ currentAgent, thinking, decisionSteps, events, class
       <section>
         <h2 className="text-xs font-semibold uppercase tracking-wide text-slate-400">Thinking</h2>
         {thinking ? (
-          <div className="mt-2 space-y-2 rounded-[var(--radius-card)] border border-[var(--color-border-default)] bg-slate-900/60 p-[var(--spacing-card)]">
+          <div ref={thinkingRef} className="mt-2 max-h-48 overflow-y-auto space-y-2 rounded-[var(--radius-card)] border border-[var(--color-border-default)] bg-slate-900/60 p-[var(--spacing-card)]">
             <p className="text-sm font-semibold">{thinking.title}</p>
             <p className="text-xs leading-5 text-slate-300">
               <TypewriterText text={thinking.summary} speed={25} startDelay={200} />

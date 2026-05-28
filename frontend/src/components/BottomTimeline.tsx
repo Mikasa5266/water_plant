@@ -1,6 +1,17 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Play, Pause, Zap, CheckCircle2, ChevronRight, Terminal } from 'lucide-react';
 import { AnomalySimulation, IncidentType } from '../types/index';
+
+const TIMELINE_NODES = [
+  { step: 1, label: '异常触发', desc: '指标越线/突变', detail: '传感器检测到工艺参数偏离正常范围，系统自动标记异常事件并生成告警' },
+  { step: 2, label: '数据上送', desc: '参数包云传', detail: '异常数据包经边缘网关加密上送至云端AI决策引擎，延迟<50ms' },
+  { step: 3, label: '总管分析', desc: '多维归因推断', detail: '监管总管Agent综合历史数据、关联参数进行多维度根因分析' },
+  { step: 4, label: '派发任务', desc: '子智能层调度', detail: '总管将处置任务分派给对应工艺段的专业子Agent执行' },
+  { step: 5, label: '方案生成', desc: '高精极值寻求', detail: '子Agent基于工艺模型生成最优调控方案，计算置信度与风险评估' },
+  { step: 6, label: '直接执行', desc: 'PLC状态写入', detail: '经安全校验后，控制指令下发至PLC/DCS，写入设备运行参数' },
+  { step: 7, label: '设备动作', desc: '变频变压到位', detail: '执行机构响应指令，变频器/阀门/泵组完成物理状态切换' },
+  { step: 8, label: '指标恢复', desc: '闭环水质恢复', detail: '持续监测确认工艺参数回归正常区间，闭环验证处置效果' },
+] as const;
 
 interface BottomTimelineProps {
   simulation: AnomalySimulation;
@@ -17,6 +28,9 @@ export const BottomTimeline: React.FC<BottomTimelineProps> = ({
   triggerSimulationIncident,
   runStepChange
 }) => {
+  const [hoveredStep, setHoveredStep] = useState<number | null>(null);
+  const activeNode = TIMELINE_NODES.find(n => n.step === simulation.step);
+
   return (
     <div 
       className="mt-4 bg-slate-950/90 border border-slate-800/80 rounded-2xl p-4 flex flex-col gap-4 relative"
@@ -141,20 +155,11 @@ export const BottomTimeline: React.FC<BottomTimelineProps> = ({
         {/* The 8 node stages timeline representation */}
         <div className="col-span-12 lg:col-span-8 overflow-x-auto pb-1">
           <div className="flex items-center gap-1.5 min-w-[640px] py-2 px-1">
-            {[
-              { step: 1, label: '异常触发', desc: '指标越线/突变' },
-              { step: 2, label: '数据上送', desc: '参数包云传' },
-              { step: 3, label: '总管分析', desc: '多维归因推断' },
-              { step: 4, label: '派发任务', desc: '子智能层调度' },
-              { step: 5, label: '方案生成', desc: '高精极值寻求' },
-              { step: 6, label: '直接执行', desc: 'PLC状态写入' },
-              { step: 7, label: '设备动作', desc: '变频变压到位' },
-              { step: 8, label: '指标恢复', desc: '闭环水质恢复' }
-            ].map((node) => {
+            {TIMELINE_NODES.map((node) => {
               const isActive = simulation.active && simulation.step === node.step;
               const isPassed = simulation.active && simulation.step > node.step;
-              
-              // Node Color variables
+              const isHovered = hoveredStep === node.step;
+
               let circleStyle = 'border-slate-800 bg-slate-900/50 text-slate-500';
               let textStyle = 'text-slate-500';
               let glowPill = '';
@@ -170,19 +175,23 @@ export const BottomTimeline: React.FC<BottomTimelineProps> = ({
 
               return (
                 <React.Fragment key={node.step}>
-                  {/* Interactive Step item */}
-                  <div 
+                  <div
                     onClick={() => {
                       if (simulation.active) {
                         runStepChange(node.step);
                       }
                     }}
-                    className={`flex-1 flex flex-col items-center p-2 rounded-xl border border-transparent transition-all select-none ${
+                    onMouseEnter={() => setHoveredStep(node.step)}
+                    onMouseLeave={() => setHoveredStep(null)}
+                    className={`relative flex-1 flex flex-col items-center p-2 rounded-xl border border-transparent transition-all select-none ${
                       simulation.active ? 'cursor-pointer hover:border-slate-800/60 hover:bg-slate-900/30' : ''
                     } ${glowPill}`}
                   >
-                    <div className={`w-7 h-7 rounded-lg border-2 flex items-center justify-center text-[11px] transition-all duration-300 ${circleStyle}`}>
+                    <div className={`relative w-7 h-7 rounded-lg border-2 flex items-center justify-center text-[11px] transition-all duration-300 ${circleStyle}`}>
                       {isPassed ? <CheckCircle2 className="w-3.5 h-3.5 text-teal-400" /> : node.step}
+                      {isActive && (
+                        <span className="absolute inset-0 rounded-lg border-2 border-amber-400/60 animate-ping" />
+                      )}
                     </div>
                     <span className={`text-xs mt-1.5 text-center leading-tight tracking-wider ${textStyle}`}>
                       {node.label}
@@ -190,11 +199,21 @@ export const BottomTimeline: React.FC<BottomTimelineProps> = ({
                     <span className="text-[9px] text-slate-500 text-center scale-90 mt-0.5 leading-none block">
                       {node.desc}
                     </span>
+
+                    {isHovered && (
+                      <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 z-50 w-48 rounded-lg border border-slate-700 bg-slate-900/95 p-2 text-[11px] text-slate-300 leading-relaxed shadow-lg backdrop-blur-sm pointer-events-none">
+                        <p className="font-semibold text-slate-100 mb-1">{node.label}</p>
+                        <p>{node.detail}</p>
+                        <div className="absolute top-full left-1/2 -translate-x-1/2 w-2 h-2 rotate-45 bg-slate-900 border-r border-b border-slate-700" />
+                      </div>
+                    )}
                   </div>
-                  
+
                   {node.step < 8 && (
                     <div className="flex items-center" id={`timeline-connector-${node.step}`}>
-                      <ChevronRight className={`w-3.5 h-3.5 ${isPassed ? 'text-teal-500/40' : 'text-slate-800'}`} />
+                      <ChevronRight className={`w-3.5 h-3.5 transition-colors duration-500 ${
+                        isPassed ? 'text-teal-400' : isActive ? 'text-amber-500/60' : 'text-slate-800'
+                      }`} />
                     </div>
                   )}
                 </React.Fragment>
@@ -214,6 +233,11 @@ export const BottomTimeline: React.FC<BottomTimelineProps> = ({
               <p className="text-xs text-slate-100 mt-1 font-medium leading-relaxed">
                 {simulation.description}
               </p>
+              {simulation.active && activeNode && (
+                <p className="text-[11px] text-slate-400 mt-2 leading-relaxed border-t border-slate-800/50 pt-2">
+                  {activeNode.detail}
+                </p>
+              )}
             </div>
             {simulation.active && (
               <div className="text-[10px] text-slate-400 font-mono flex items-center justify-between mt-2 pt-2 border-t border-slate-900/50">
