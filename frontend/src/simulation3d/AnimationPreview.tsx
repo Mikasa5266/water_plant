@@ -1,8 +1,6 @@
 import React, { useState } from 'react';
 import { useScenarioStore } from '../stores/useScenarioStore';
-import { AGENT_3D_ANCHORS } from '../data/constants';
-import { DEVICE_CENTERS, FOCUS_OFFSET } from './config';
-import { toThreePos, toThreePosTuple } from './utils/coordinates';
+import { DEVICE_FOCUS_PRESETS } from './config';
 import type { IncidentType, AgentId, CameraFocusTarget, ThinkingContent } from '../types/scenario';
 
 /** 4 个异常演练场景 */
@@ -53,29 +51,49 @@ const AnimationPreview: React.FC = () => {
   const showThinking = (agentId: AgentId) => {
     const messages: Record<AgentId, ThinkingContent> = {
       supervisor: {
-        title: '监督者分析中',
-        summary: '正在分析全厂传感器数据，检测到异常信号，启动根因定位',
-        points: ['全厂传感器扫描', '异常信号识别', '根因定位算法运行中'],
+        title: '监管中枢',
+        summary: '',
+        points: [
+          '问题：全厂传感器异常信号',
+          '分析：数据上送 + 根因定位',
+          '方案：派发专项Agent处置',
+        ],
       },
       dosing: {
-        title: '加药Agent计算中',
-        summary: '加药量已偏离最优区间，建议调整 PAC 投加率',
-        points: ['PAC投加率偏差检测', '浊度反馈分析', '建议值: 5.2 mg/L'],
+        title: '加药Agent',
+        summary: '',
+        points: [
+          '问题：PAC投加率偏差',
+          '分析：浊度反馈异常',
+          '方案：调整至 5.2 mg/L',
+        ],
       },
       uf: {
-        title: '超滤Agent诊断中',
-        summary: '跨膜压差持续上升，建议启动在线化学清洗',
-        points: ['TMP趋势分析', '膜污染评估', '建议: 启动CEB清洗'],
+        title: '超滤Agent',
+        summary: '',
+        points: [
+          '问题：跨膜压差持续上升',
+          '分析：膜污染趋势加速',
+          '方案：启动CEB化学清洗',
+        ],
       },
       ro: {
-        title: 'RO Agent分析中',
-        summary: '膜通量衰减速率超标，建议调整回收率并检查进水水质',
-        points: ['通量衰减趋势', '进水SDI评估', '建议: 降低回收率至72%'],
+        title: 'RO Agent',
+        summary: '',
+        points: [
+          '问题：膜通量衰减超标',
+          '分析：进水SDI偏高',
+          '方案：降低回收率至72%',
+        ],
       },
       pump: {
-        title: '泵组Agent检测中',
-        summary: '泵组电流波动异常，建议切换至备用泵并安排检修',
-        points: ['电流波动频谱分析', '轴承温度监控', '建议: 切换备用泵'],
+        title: '泵组Agent',
+        summary: '',
+        points: [
+          '问题：电流波动异常',
+          '分析：轴承温度偏高',
+          '方案：切换备用泵',
+        ],
       },
     };
     useScenarioStore.getState().setThinking(agentId, messages[agentId]);
@@ -87,20 +105,13 @@ const AnimationPreview: React.FC = () => {
 
   /* ── 摄像机聚焦 ── */
   const focusCamera = (agentId: AgentId, duration = 2000) => {
-    // 使用设备本体中心作为 lookAt 目标（非 Agent 球体）
-    const deviceCenter = DEVICE_CENTERS[agentId] ?? AGENT_3D_ANCHORS[agentId];
-    const lookAtPos = toThreePosTuple(deviceCenter);
-
-    // 计算相机位置：设备中心 + 侧上方偏移
-    const spread = FOCUS_OFFSET.positionMul;
+    // 使用预设的"设备前上方"视角，而非简单偏移设备中心
+    const preset = DEVICE_FOCUS_PRESETS[agentId];
+    if (!preset) return;
     const target: CameraFocusTarget = {
-      position: [
-        lookAtPos[0] + spread,
-        lookAtPos[1] + FOCUS_OFFSET.heightMul,
-        lookAtPos[2] + FOCUS_OFFSET.depthMul,
-      ],
-      lookAt: [lookAtPos[0], lookAtPos[1], lookAtPos[2]],
-      duration,
+      position: preset.cameraPos,
+      lookAt: preset.lookAt,
+      duration: preset.duration ?? duration,
     };
     useScenarioStore.getState().setCameraFocus(target);
   };
