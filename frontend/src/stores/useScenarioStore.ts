@@ -155,6 +155,7 @@ export const useScenarioStore = create<ScenarioState & ScenarioActions>((set, ge
       targetAgentId: targetAgent,
       agentUIStatus: 'pending',
       particleIntent: 'anomaly',
+      // 故障设备闪红（AlarmFlash），但 Agent 球体暂不变色（还没感知到）
       deviceFlashing: targetAgent,
       thinking: null,
       thinkingAgentId: null,
@@ -162,10 +163,8 @@ export const useScenarioStore = create<ScenarioState & ScenarioActions>((set, ge
         i === 0 ? { ...s, active: true } : { ...s }
       ),
       phaseStartTime: Date.now(),
-      agentRunStatuses: {
-        ...INITIAL_RUN_STATUSES,
-        [targetAgent]: 'warning',
-      },
+      // Agent 全部保持 monitoring，等待监管者分析
+      agentRunStatuses: { ...INITIAL_RUN_STATUSES },
     });
   },
 
@@ -199,16 +198,38 @@ export const useScenarioStore = create<ScenarioState & ScenarioActions>((set, ge
       case Phase.SUPERVISOR_ANALYZING:
         patch.particleIntent = null;
         patch.activeAgentId = 'supervisor';
+        // 监管者进入思考状态（蓝色），目标 Agent 仍 monitoring，设备继续闪红
+        patch.agentRunStatuses = {
+          ...INITIAL_RUN_STATUSES,
+          supervisor: 'thinking',
+        };
         break;
       case Phase.DISPATCHING:
         patch.particleIntent = 'dispatch';
+        // 监管者仍 thinking，设备继续闪红
         break;
       case Phase.AGENT_ANALYZING:
         patch.particleIntent = null;
         patch.activeAgentId = targetAgentId;
+        // 命令下发：目标 Agent 变 warning（橙色），设备继续闪红
+        if (targetAgentId) {
+          patch.agentRunStatuses = {
+            ...INITIAL_RUN_STATUSES,
+            supervisor: 'thinking',
+            [targetAgentId]: 'warning',
+          };
+        }
         break;
       case Phase.EXECUTING: {
         patch.particleIntent = 'execute';
+        // Agent 进入执行状态（绿色），设备继续闪红
+        if (targetAgentId) {
+          patch.agentRunStatuses = {
+            ...INITIAL_RUN_STATUSES,
+            supervisor: 'thinking',
+            [targetAgentId]: 'executing',
+          };
+        }
         // 自动聚焦：从设备前上方俯视整体，而非贴近设备中心
         if (targetAgentId) {
           const preset = DEVICE_FOCUS_PRESETS[targetAgentId];
@@ -225,14 +246,25 @@ export const useScenarioStore = create<ScenarioState & ScenarioActions>((set, ge
       }
       case Phase.DEVICE_OPERATING:
         patch.particleIntent = null;
+        // 执行阶段结束，停止设备闪红
         patch.deviceFlashing = null;
+        // Agent 保持 executing 状态（设备操作中）
+        if (targetAgentId) {
+          patch.agentRunStatuses = {
+            ...INITIAL_RUN_STATUSES,
+            [targetAgentId]: 'executing',
+          };
+        }
         break;
       case Phase.RECOVERING:
         patch.particleIntent = null;
+        // 恢复阶段：Agent 保持 executing，设备不闪
         break;
       case Phase.RECOVERED:
         patch.particleIntent = null;
         patch.cameraFocus = null;
+        // 全部恢复正常
+        patch.agentRunStatuses = { ...INITIAL_RUN_STATUSES };
         break;
     }
 

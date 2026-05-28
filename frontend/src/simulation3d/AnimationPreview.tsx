@@ -51,29 +51,49 @@ const AnimationPreview: React.FC = () => {
   const showThinking = (agentId: AgentId) => {
     const messages: Record<AgentId, ThinkingContent> = {
       supervisor: {
-        title: '监督者分析中',
-        summary: '正在分析全厂传感器数据，检测到异常信号，启动根因定位',
-        points: ['全厂传感器扫描', '异常信号识别', '根因定位算法运行中'],
+        title: '监管中枢',
+        summary: '',
+        points: [
+          '问题：全厂传感器异常信号',
+          '分析：数据上送 + 根因定位',
+          '方案：派发专项Agent处置',
+        ],
       },
       dosing: {
-        title: '加药Agent计算中',
-        summary: '加药量已偏离最优区间，建议调整 PAC 投加率',
-        points: ['PAC投加率偏差检测', '浊度反馈分析', '建议值: 5.2 mg/L'],
+        title: '加药Agent',
+        summary: '',
+        points: [
+          '问题：PAC投加率偏差',
+          '分析：浊度反馈异常',
+          '方案：调整至 5.2 mg/L',
+        ],
       },
       uf: {
-        title: '超滤Agent诊断中',
-        summary: '跨膜压差持续上升，建议启动在线化学清洗',
-        points: ['TMP趋势分析', '膜污染评估', '建议: 启动CEB清洗'],
+        title: '超滤Agent',
+        summary: '',
+        points: [
+          '问题：跨膜压差持续上升',
+          '分析：膜污染趋势加速',
+          '方案：启动CEB化学清洗',
+        ],
       },
       ro: {
-        title: 'RO Agent分析中',
-        summary: '膜通量衰减速率超标，建议调整回收率并检查进水水质',
-        points: ['通量衰减趋势', '进水SDI评估', '建议: 降低回收率至72%'],
+        title: 'RO Agent',
+        summary: '',
+        points: [
+          '问题：膜通量衰减超标',
+          '分析：进水SDI偏高',
+          '方案：降低回收率至72%',
+        ],
       },
       pump: {
-        title: '泵组Agent检测中',
-        summary: '泵组电流波动异常，建议切换至备用泵并安排检修',
-        points: ['电流波动频谱分析', '轴承温度监控', '建议: 切换备用泵'],
+        title: '泵组Agent',
+        summary: '',
+        points: [
+          '问题：电流波动异常',
+          '分析：轴承温度偏高',
+          '方案：切换备用泵',
+        ],
       },
     };
     useScenarioStore.getState().setThinking(agentId, messages[agentId]);

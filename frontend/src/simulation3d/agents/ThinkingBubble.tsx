@@ -10,6 +10,11 @@ import { toThreePos } from '../utils/coordinates';
  * 3D 思考气泡（HTML overlay）
  * 出现在 Agent 上方，打字机效果逐条显示 AI 推理要点
  * 位置跟随 thinkingAgentId 对应的 3D 锚点
+ *
+ * 尺寸策略：
+ * - distanceFactor 设为较大值（25），确保远距离仍可读
+ * - fontSize/padding 放大，增强屏幕可读性
+ * - 内容采用短句格式（问题/方案），信息密度高
  */
 export const ThinkingBubble: React.FC = () => {
   const thinking = useScenarioStore((s) => s.thinking);
@@ -75,58 +80,61 @@ const ThinkingBubbleContent: React.FC<{
     <Html
       position={bubblePos}
       center
-      distanceFactor={15 * SCENE_SCALE}
+      distanceFactor={25}
+      style={{ pointerEvents: 'auto' }}
     >
       <div
         style={{
           background: 'rgba(15, 23, 42, 0.95)',
-          border: '1px solid rgba(56, 189, 248, 0.4)',
-          borderRadius: 10,
-          padding: '10px 14px',
-          minWidth: 200,
-          maxWidth: 280,
+          border: '1px solid rgba(56, 189, 248, 0.5)',
+          borderRadius: 12,
+          padding: '14px 18px',
+          minWidth: 260,
+          maxWidth: 380,
           color: '#e2e8f0',
-          fontFamily: 'monospace',
-          fontSize: 12,
-          lineHeight: 1.5,
+          fontFamily:
+            '-apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif',
+          fontSize: 15,
+          lineHeight: 1.6,
           pointerEvents: 'auto',
           cursor: 'pointer',
-          backdropFilter: 'blur(8px)',
-          boxShadow: '0 0 20px rgba(56, 189, 248, 0.15)',
+          backdropFilter: 'blur(12px)',
+          boxShadow: '0 4px 30px rgba(56, 189, 248, 0.2)',
           position: 'relative',
+          transform: 'scale(1.1)', // 全局放大 10% 确保可读性
+          transformOrigin: 'center bottom',
         }}
-        title="点击查看详情"
+        title="点击关闭"
         onClick={() => {
-          // 点击气泡可关闭（未来可扩展为打开详情窗口）
           useScenarioStore.getState().clearThinking();
         }}
       >
         {/* ▼ 三角尾巴 */}
-        <div style={{
-          position: 'absolute',
-          bottom: -8,
-          left: '50%',
-          transform: 'translateX(-50%)',
-          width: 0,
-          height: 0,
-          borderLeft: '8px solid transparent',
-          borderRight: '8px solid transparent',
-          borderTop: '8px solid rgba(15, 23, 42, 0.95)',
-        }} />
+        <div
+          style={{
+            position: 'absolute',
+            bottom: -9,
+            left: '50%',
+            transform: 'translateX(-50%)',
+            width: 0,
+            height: 0,
+            borderLeft: '10px solid transparent',
+            borderRight: '10px solid transparent',
+            borderTop: '10px solid rgba(15, 23, 42, 0.95)',
+          }}
+        />
         {/* 标题 */}
-        <div style={{
-          color: '#38bdf8',
-          fontWeight: 'bold',
-          marginBottom: 6,
-          borderBottom: '1px solid rgba(56, 189, 248, 0.2)',
-          paddingBottom: 4,
-        }}>
+        <div
+          style={{
+            color: '#38bdf8',
+            fontWeight: 'bold',
+            fontSize: 16,
+            marginBottom: 8,
+            borderBottom: '1px solid rgba(56, 189, 248, 0.25)',
+            paddingBottom: 6,
+          }}
+        >
           {thinking.title}
-        </div>
-
-        {/* 摘要 */}
-        <div style={{ color: '#94a3b8', marginBottom: 6 }}>
-          {thinking.summary}
         </div>
 
         {/* 推理要点（打字机效果） */}
@@ -135,15 +143,27 @@ const ThinkingBubbleContent: React.FC<{
             key={i}
             style={{
               color: i === currentIndex ? '#f1f5f9' : '#94a3b8',
-              paddingLeft: 8,
-              borderLeft: '2px solid rgba(56, 189, 248, 0.3)',
-              marginBottom: 3,
+              paddingLeft: 10,
+              borderLeft: '2px solid rgba(56, 189, 248, 0.4)',
+              marginBottom: 4,
+              fontSize: 14,
             }}
           >
             {displayedPoints[i] ?? ''}
-            {i === currentIndex && currentChar < thinking.points[currentIndex].length && (
-              <span style={{ animation: 'blink 0.7s infinite' }}>|</span>
-            )}
+            {i === currentIndex &&
+              currentChar < thinking.points[currentIndex].length && (
+                <span
+                  style={{
+                    display: 'inline-block',
+                    width: 2,
+                    height: 14,
+                    background: '#38bdf8',
+                    marginLeft: 2,
+                    verticalAlign: 'middle',
+                    animation: 'blink 0.7s infinite',
+                  }}
+                />
+              )}
           </div>
         ))}
       </div>
