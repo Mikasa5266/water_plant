@@ -28,11 +28,11 @@ export function Taskbar({
   className = '',
 }: TaskbarProps) {
   return (
-    <footer className={`flex items-center gap-3 border-t border-slate-800 bg-slate-950/90 px-3 py-2 ${className}`}>
+    <footer className={`flex items-center gap-3 border-t border-[var(--color-border-default)] bg-[var(--color-surface-base)] px-3 py-2 ${className}`}>
       <button
         type="button"
         onClick={onHome}
-        className="rounded border border-slate-700 bg-slate-900 px-3 py-1.5 text-sm text-slate-100 hover:border-cyan-400"
+        className="rounded-[var(--radius-card)] border border-[var(--color-border-default)] bg-slate-900 px-3 py-1.5 text-sm text-slate-100 hover:border-[var(--color-border-active)]"
       >
         Home
       </button>
@@ -43,10 +43,10 @@ export function Taskbar({
             key={windowItem.agentId}
             type="button"
             onClick={() => onSelectWindow(windowItem.agentId)}
-            className={`min-w-28 rounded border px-3 py-1.5 text-left text-xs ${
+            className={`min-w-28 rounded-[var(--radius-card)] border px-3 py-1.5 text-left text-xs ${
               windowItem.isActive
-                ? 'border-cyan-400 bg-cyan-400/10 text-cyan-100'
-                : 'border-slate-700 bg-slate-900 text-slate-300'
+                ? 'border-[var(--color-border-active)] bg-cyan-400/10 text-cyan-100'
+                : 'border-[var(--color-border-default)] bg-slate-900 text-slate-300'
             }`}
           >
             <span className="block truncate">{windowItem.title}</span>
@@ -60,7 +60,7 @@ export function Taskbar({
       <button
         type="button"
         onClick={onOpenNotifications}
-        className="relative rounded border border-slate-700 bg-slate-900 px-3 py-1.5 text-sm text-slate-100"
+        className="relative rounded-[var(--radius-card)] border border-[var(--color-border-default)] bg-slate-900 px-3 py-1.5 text-sm text-slate-100"
         aria-label="Open notifications"
       >
         Alerts

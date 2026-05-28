@@ -10,18 +10,19 @@ export interface DockAgentItem {
 
 export interface DockProps {
   agents: DockAgentItem[];
+  pulsingAgentId?: AgentId | null;
   onOpenAgent: (agentId: AgentId) => void;
   className?: string;
 }
 
 const statusClassName: Record<AgentUIStatus, string> = {
-  normal: 'bg-emerald-400',
-  pending: 'bg-amber-400',
-  alarm: 'bg-rose-400',
-  recovering: 'bg-teal-400',
+  normal: 'bg-[var(--color-status-normal)]',
+  pending: 'bg-[var(--color-status-pending)]',
+  alarm: 'bg-[var(--color-status-alarm)]',
+  recovering: 'bg-[var(--color-status-recovering)]',
 };
 
-export function Dock({ agents, onOpenAgent, className = '' }: DockProps) {
+export function Dock({ agents, pulsingAgentId, onOpenAgent, className = '' }: DockProps) {
   return (
     <nav className={`flex flex-col items-center gap-3 ${className}`} aria-label="Agent dock">
       {agents.map((agent) => (
@@ -29,11 +30,11 @@ export function Dock({ agents, onOpenAgent, className = '' }: DockProps) {
           key={agent.id}
           type="button"
           onClick={() => onOpenAgent(agent.id)}
-          className={`relative flex h-12 w-12 items-center justify-center rounded-lg border text-xs font-semibold transition-colors ${
+          className={`relative flex h-12 w-12 items-center justify-center rounded-[var(--radius-card)] border text-xs font-semibold transition-colors ${
             agent.isActive
-              ? 'border-cyan-300 bg-cyan-400/15 text-cyan-100'
-              : 'border-slate-700 bg-slate-900/70 text-slate-200 hover:border-slate-500'
-          }`}
+              ? 'border-[var(--color-border-active)] bg-cyan-400/15 text-cyan-100'
+              : 'border-[var(--color-border-default)] bg-[var(--color-surface-elevated)] text-slate-200 hover:border-slate-500'
+          } ${pulsingAgentId === agent.id ? 'animate-glow-pulse' : ''}`}
           aria-label={`Open ${agent.label}`}
           title={agent.label}
         >

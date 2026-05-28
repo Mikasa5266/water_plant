@@ -20,7 +20,7 @@ export function HelpOverlay({ isOpen, shortcuts, onClose, className = '' }: Help
       aria-modal="true"
       aria-label="Keyboard help"
     >
-      <section className="w-full max-w-lg rounded-lg border border-slate-700 bg-slate-950 p-4 shadow-2xl">
+      <section className="w-full max-w-lg rounded-[var(--radius-panel)] border border-[var(--color-border-default)] bg-slate-950 p-[var(--spacing-panel)] shadow-[var(--shadow-panel)]">
         <header className="flex items-center justify-between">
           <h2 className="text-base font-semibold">Keyboard Help</h2>
           <button
@@ -35,7 +35,7 @@ export function HelpOverlay({ isOpen, shortcuts, onClose, className = '' }: Help
 
         <dl className="mt-4 grid gap-2">
           {shortcuts.map((shortcut) => (
-            <div key={shortcut.keys} className="grid grid-cols-[120px_1fr] gap-3 rounded bg-slate-900/70 p-2 text-sm">
+            <div key={shortcut.keys} className="grid grid-cols-[120px_1fr] gap-3 rounded-[var(--radius-card)] bg-[var(--color-surface-elevated)] p-2 text-sm">
               <dt className="font-mono text-cyan-200">{shortcut.keys}</dt>
               <dd className="text-slate-300">{shortcut.description}</dd>
             </div>

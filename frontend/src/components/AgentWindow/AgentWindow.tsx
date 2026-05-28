@@ -1,4 +1,5 @@
 import { useCallback, useRef } from 'react';
+import { motion } from 'motion/react';
 import type { AgentId, AgentUIStatus, MetricField, NormalRange } from '../../types/index';
 
 export interface AgentWindowProps {
@@ -149,9 +150,13 @@ export function AgentWindow({
   const tone = statusTone[status];
 
   return (
-    <section
-      className={`absolute overflow-hidden rounded-lg border bg-slate-950/95 text-slate-100 shadow-2xl ${
-        isActive ? 'border-cyan-400/70' : 'border-slate-700'
+    <motion.section
+      initial={{ scale: 0.95, opacity: 0, filter: 'blur(4px)' }}
+      animate={{ scale: 1, opacity: 1, filter: 'blur(0px)' }}
+      exit={{ scale: 0.95, opacity: 0, filter: 'blur(2px)' }}
+      transition={{ duration: 0.25, ease: 'easeOut' }}
+      className={`absolute overflow-hidden rounded-[var(--radius-panel)] border bg-[var(--color-surface-base)] text-slate-100 shadow-[var(--shadow-window)] ${
+        isActive ? 'border-[var(--color-border-active)]' : 'border-[var(--color-border-default)]'
       } ${className}`}
       style={{
         left: position.x,
@@ -210,13 +215,13 @@ export function AgentWindow({
       </header>
 
       <div className="space-y-3 p-3">
-        <p className="rounded border border-slate-800 bg-slate-900/70 p-2 text-xs leading-5 text-slate-300">
+        <p className="rounded-[var(--radius-card)] border border-[var(--color-border-default)] bg-[var(--color-surface-elevated)] p-2 text-xs leading-5 text-slate-300">
           {role}
         </p>
 
         <div className="grid grid-cols-2 gap-2">
           {metrics.map((metric) => (
-            <article key={metric.key} className="rounded border border-slate-800 bg-slate-900/60 p-2">
+            <article key={metric.key} className="rounded-[var(--radius-card)] border border-[var(--color-border-default)] bg-slate-900/60 p-2">
               <p className="truncate text-[11px] text-slate-400">{metric.label}</p>
               <p className="mt-1 text-sm font-semibold text-slate-100">
                 {metric.value}
@@ -228,12 +233,12 @@ export function AgentWindow({
         </div>
       </div>
 
-      <footer className="absolute inset-x-0 bottom-0 border-t border-slate-800 bg-slate-900/80 px-3 py-2 text-xs text-slate-300">
+      <footer className="absolute inset-x-0 bottom-0 border-t border-[var(--color-border-default)] bg-slate-900/80 px-3 py-2 text-xs text-slate-300">
         {footerText}
       </footer>
       <button
         type="button"
-        className="absolute bottom-0 right-0 h-5 w-5 cursor-nwse-resize touch-none rounded-tl border-l border-t border-slate-700 bg-slate-800/80 text-[10px] text-slate-400"
+        className="absolute bottom-0 right-0 h-5 w-5 cursor-nwse-resize touch-none rounded-tl border-l border-t border-[var(--color-border-default)] bg-slate-800/80 text-[10px] text-slate-400"
         aria-label={`Resize ${title}`}
         onPointerDown={handleResizeStart}
         onPointerMove={handleResizeMove}
@@ -242,6 +247,6 @@ export function AgentWindow({
       >
         /
       </button>
-    </section>
+    </motion.section>
   );
 }

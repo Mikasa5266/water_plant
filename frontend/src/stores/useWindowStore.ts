@@ -19,6 +19,7 @@ export interface WindowManagerActions {
   resizeWindow: (agentId: AgentId, size: { width: number; height: number }) => void;
   closeAllWindows: () => void;
   getOpenWindows: () => WindowState[];
+  cycleWindow: (direction: 'next' | 'prev') => void;
 }
 
 const DEFAULT_WINDOW_SIZE = { width: 420, height: 520 };
@@ -168,5 +169,22 @@ export const useWindowStore = create<WindowManagerState & WindowManagerActions>(
 
   getOpenWindows: () => {
     return (Object.values(get().windows) as WindowState[]).filter((w) => w.isOpen);
+  },
+
+  cycleWindow: (direction) => {
+    const { windows, activeWindowId } = get();
+    const visible = (Object.values(windows) as WindowState[])
+      .filter((w) => w.isOpen && !w.isMinimized)
+      .sort((a, b) => a.zIndex - b.zIndex);
+
+    if (visible.length < 2) return;
+
+    const currentIndex = visible.findIndex((w) => w.agentId === activeWindowId);
+    const nextIndex =
+      direction === 'next'
+        ? (currentIndex + 1) % visible.length
+        : (currentIndex - 1 + visible.length) % visible.length;
+
+    get().focusWindow(visible[nextIndex].agentId);
   },
 }));

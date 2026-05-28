@@ -1,10 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
 import { Activity } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
 import type { AgentId, TelemetryState } from '../types/index';
 import { ScenarioPhase } from '../types/index';
 import { useAnimationLoop } from '../hooks/useAnimationLoop';
 import { useClock } from '../hooks/useClock';
 import { useKeyboard } from '../hooks/useKeyboard';
+import { usePhaseEffects } from '../hooks/usePhaseEffects';
 import { useAgentState } from '../features/agents/useAgentState';
 import { useAgentCards } from '../features/agents/useAgentCards';
 import { useSimulation } from '../features/simulation/useSimulation';
@@ -43,11 +45,13 @@ const STEP_TO_PHASE: Record<number, ScenarioPhase> = {
 };
 
 const KEYBOARD_SHORTCUTS: HelpShortcutItem[] = [
-  { keys: 'F1', description: '触发加药异常场景' },
-  { keys: 'F2', description: '触发超滤异常场景' },
-  { keys: 'F3', description: '触发反渗透异常场景' },
-  { keys: 'F4', description: '触发泵组异常场景' },
-  { keys: '? / F12', description: '显示或隐藏快捷键帮助' },
+  { keys: 'Ctrl+1', description: '触发加药异常场景' },
+  { keys: 'Ctrl+2', description: '触发超滤异常场景' },
+  { keys: 'Ctrl+3', description: '触发反渗透异常场景' },
+  { keys: 'Ctrl+4', description: '触发泵组异常场景' },
+  { keys: '?', description: '显示或隐藏快捷键帮助' },
+  { keys: 'Ctrl+Tab', description: '切换到下一个窗口' },
+  { keys: 'Ctrl+Shift+Tab', description: '切换到上一个窗口' },
   { keys: 'Ctrl+Shift+D', description: '打开或关闭调试面板' },
   { keys: 'Ctrl+Home', description: '回到 OS 桌面' },
   { keys: 'Esc', description: '按优先级关闭浮层、终止场景、关闭通知或最小化窗口' },
@@ -89,6 +93,8 @@ export default function DashboardPage() {
   const [camera, setCamera] = useState({ yaw: -35, pitch: 35, zoom: 0.95 });
   const [isHelpOpen, setIsHelpOpen] = useState(false);
   const [isDebugPanelOpen, setIsDebugPanelOpen] = useState(false);
+  const [pulsingAgentId, setPulsingAgentId] = useState<AgentId | null>(null);
+  const [windowStatusText, setWindowStatusText] = useState('');
 
   const { animationTick, animationTickRef } = useAnimationLoop();
   const currentTime = useClock();
@@ -128,6 +134,7 @@ export default function DashboardPage() {
   const moveWindow = useWindowStore((state) => state.moveWindow);
   const resizeWindow = useWindowStore((state) => state.resizeWindow);
   const closeAllWindows = useWindowStore((state) => state.closeAllWindows);
+  const cycleWindow = useWindowStore((state) => state.cycleWindow);
   const agentUIStatus = useScenarioStore((state) => state.agentUIStatus);
   const phase = useScenarioStore((state) => state.phase);
   const activeAgentId = useScenarioStore((state) => state.activeAgentId);
@@ -215,6 +222,15 @@ export default function DashboardPage() {
     onReturnHome: handleReturnHome,
     onClearNotifications: clearNotifications,
     onMinimizeWindow: minimizeWindow,
+    onCycleWindow: cycleWindow,
+  });
+
+  usePhaseEffects({
+    onPulsingAgentChange: setPulsingAgentId,
+    onInfoPanelAgentSwitch: (agentId) => {
+      openWindow(agentId);
+    },
+    onWindowStatusText: setWindowStatusText,
   });
 
   useEffect(() => {
@@ -325,7 +341,7 @@ export default function DashboardPage() {
       <main className="relative z-10 flex min-h-0 flex-1 flex-col p-4" id="main-control-board">
         <div className="grid min-h-0 flex-1 grid-cols-[72px_minmax(0,1fr)_300px] gap-4">
           <aside className="flex min-h-0 items-center justify-center rounded-lg border border-slate-800 bg-slate-950/75">
-            <Dock agents={dockAgents} onOpenAgent={handleOpenAgent} />
+            <Dock agents={dockAgents} pulsingAgentId={pulsingAgentId} onOpenAgent={handleOpenAgent} />
           </aside>
 
           <section className="flex min-h-0 flex-col">
@@ -424,33 +440,35 @@ export default function DashboardPage() {
           />
         </div>
 
-        {AGENT_ORDER.map((agentId) => {
-          const windowState = windows[agentId];
-          const agent = AGENT_WINDOW_DATA[agentId];
-          if (!windowState.isOpen) return null;
+        <AnimatePresence>
+          {AGENT_ORDER.map((agentId) => {
+            const windowState = windows[agentId];
+            const agent = AGENT_WINDOW_DATA[agentId];
+            if (!windowState.isOpen) return null;
 
-          return (
-            <AgentWindow
-              key={agentId}
-              agentId={agentId}
-              title={agent.name}
-              status={agentUIStatus}
-              role={agent.role}
-              metrics={agent.metrics}
-              footerText={windowState.isMinimized ? '已最小化' : '等待分析 · 决策链同步'}
-              isActive={activeWindowId === agentId}
-              isMinimized={windowState.isMinimized}
-              position={windowState.position}
-              size={windowState.size}
-              zIndex={windowState.zIndex}
-              onFocus={focusWindow}
-              onMinimize={minimizeWindow}
-              onClose={closeWindow}
-              onMove={moveWindow}
-              onResize={resizeWindow}
-            />
-          );
-        })}
+            return (
+              <AgentWindow
+                key={agentId}
+                agentId={agentId}
+                title={agent.name}
+                status={agentUIStatus}
+                role={agent.role}
+                metrics={agent.metrics}
+                footerText={windowStatusText || (windowState.isMinimized ? '已最小化' : '等待分析 · 决策链同步')}
+                isActive={activeWindowId === agentId}
+                isMinimized={windowState.isMinimized}
+                position={windowState.position}
+                size={windowState.size}
+                zIndex={windowState.zIndex}
+                onFocus={focusWindow}
+                onMinimize={minimizeWindow}
+                onClose={closeWindow}
+                onMove={moveWindow}
+                onResize={resizeWindow}
+              />
+            );
+          })}
+        </AnimatePresence>
 
         {isDebugPanelOpen ? (
           <section className="absolute bottom-20 right-84 z-40 w-72 rounded-lg border border-cyan-500/40 bg-slate-950/95 p-3 text-xs text-slate-200 shadow-2xl">
