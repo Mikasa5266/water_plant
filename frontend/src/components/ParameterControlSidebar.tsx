@@ -50,7 +50,7 @@ export const ParameterControlSidebar: React.FC<ParameterControlSidebarProps> = (
                 outletFlow: Math.round(updatedFlow * 0.975) 
               }));
             }}
-            className="w-full h-1 bg-slate-800 accent-teal-400 rounded-lg cursor-pointer"
+            className="theme-slider"
           />
         </div>
 
@@ -73,7 +73,7 @@ export const ParameterControlSidebar: React.FC<ParameterControlSidebarProps> = (
                 outletTurbidity: Math.max(0.01, parseFloat((updatedTurb * 0.002).toFixed(3)))
               }));
             }}
-            className="w-full h-1 bg-slate-800 accent-teal-400 rounded-lg cursor-pointer"
+            className="theme-slider"
           />
         </div>
 
@@ -97,7 +97,7 @@ export const ParameterControlSidebar: React.FC<ParameterControlSidebarProps> = (
                 healthScore: updatedDosing > 7.5 || updatedDosing < 3.2 ? 88 : 98
               }));
             }}
-            className="w-full h-1 bg-slate-800 accent-teal-400 rounded-lg cursor-pointer"
+            className="theme-slider"
           />
         </div>
 
@@ -120,7 +120,7 @@ export const ParameterControlSidebar: React.FC<ParameterControlSidebarProps> = (
                 energyConsumption: parseFloat((0.15 + (updatedPres / 800)).toFixed(3))
               }));
             }}
-            className="w-full h-1 bg-slate-800 accent-teal-400 rounded-lg cursor-pointer"
+            className="theme-slider"
           />
         </div>
 
@@ -143,7 +143,7 @@ export const ParameterControlSidebar: React.FC<ParameterControlSidebarProps> = (
                 outletFlow: Math.round(updatedFlux * 16.2)
               }));
             }}
-            className="w-full h-1 bg-slate-800 accent-teal-400 rounded-lg cursor-pointer"
+            className="theme-slider"
           />
         </div>
 

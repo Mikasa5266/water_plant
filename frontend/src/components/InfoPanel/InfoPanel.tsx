@@ -1,4 +1,5 @@
 import type { AgentId, AgentUIStatus, DecisionStep, EventLogEntry, ThinkingContent } from '../../types/index';
+import { TypewriterText, TypewriterList } from './TypewriterText';
 
 export interface InfoPanelAgent {
   id: AgentId;
@@ -34,12 +35,15 @@ export function InfoPanel({ currentAgent, thinking, decisionSteps, events, class
         {thinking ? (
           <div className="mt-2 space-y-2 rounded-[var(--radius-card)] border border-[var(--color-border-default)] bg-slate-900/60 p-[var(--spacing-card)]">
             <p className="text-sm font-semibold">{thinking.title}</p>
-            <p className="text-xs leading-5 text-slate-300">{thinking.summary}</p>
-            <ul className="space-y-1 text-xs text-slate-400">
-              {thinking.points.map((point) => (
-                <li key={point}>{point}</li>
-              ))}
-            </ul>
+            <p className="text-xs leading-5 text-slate-300">
+              <TypewriterText text={thinking.summary} speed={25} startDelay={200} />
+            </p>
+            <TypewriterList
+              items={thinking.points}
+              speed={20}
+              startDelay={400}
+              className="space-y-1 text-xs text-slate-400"
+            />
           </div>
         ) : (
           <p className="mt-2 text-sm text-slate-500">Idle</p>

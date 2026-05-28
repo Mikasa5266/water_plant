@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Activity } from 'lucide-react';
-import { motion, AnimatePresence } from 'motion/react';
+import { AnimatePresence } from 'motion/react';
 import type { AgentId, TelemetryState } from '../types/index';
 import { ScenarioPhase } from '../types/index';
 import { useAnimationLoop } from '../hooks/useAnimationLoop';
@@ -11,6 +11,7 @@ import { useAgentState } from '../features/agents/useAgentState';
 import { useAgentCards } from '../features/agents/useAgentCards';
 import { useSimulation } from '../features/simulation/useSimulation';
 import { AGENT_ORDER, AGENT_WINDOW_DATA } from '../data/agentWindowData';
+import { DEMO_SNAPSHOTS, type DemoState } from '../data/demoSnapshots';
 import { HeaderHUD } from '../components/HeaderHUD';
 import { BottomTimeline } from '../components/BottomTimeline';
 import { AgentWindow } from '../components/AgentWindow';
@@ -19,6 +20,7 @@ import { HelpOverlay, type HelpShortcutItem } from '../components/HelpOverlay';
 import { InfoPanel } from '../components/InfoPanel';
 import { Notification } from '../components/Notification';
 import { Taskbar } from '../components/Taskbar';
+import { DemoControlPanel } from '../components/DemoControlPanel';
 import { ParameterControlSidebar } from '../components/ParameterControlSidebar';
 import { WaterPlantCanvas3D } from '../components/WaterPlantCanvas3D';
 import { useScenarioStore } from '../stores/useScenarioStore';
@@ -95,6 +97,7 @@ export default function DashboardPage() {
   const [isDebugPanelOpen, setIsDebugPanelOpen] = useState(false);
   const [pulsingAgentId, setPulsingAgentId] = useState<AgentId | null>(null);
   const [windowStatusText, setWindowStatusText] = useState('');
+  const [demoState, setDemoState] = useState<DemoState>('normal');
 
   const { animationTick, animationTickRef } = useAnimationLoop();
   const currentTime = useClock();
@@ -208,6 +211,44 @@ export default function DashboardPage() {
     triggerSimulationIncident(incidentType);
   };
 
+  const handleDemoNormal = () => {
+    resetToNormal();
+    forceScenarioIdle();
+    clearScenarioThinking();
+    clearNotifications();
+    useSystemStore.getState().clearEvents();
+    setDemoState('normal');
+  };
+
+  const handleDemoAbnormal = () => {
+    if (simulation.active) return;
+    setDemoState('abnormal');
+    triggerSimulationIncident('dosing_abnormal');
+  };
+
+  const handleDemoRecovered = () => {
+    const snapshot = DEMO_SNAPSHOTS.recovered;
+    resetToNormal();
+    setTelemetry((prev) => ({ ...prev, ...snapshot.telemetry }));
+    forceScenarioIdle();
+    clearScenarioThinking();
+    useSystemStore.getState().clearEvents();
+    snapshot.events.forEach((evt) => {
+      pushEvent({ ...evt, time: evt.time || getTimestamp() });
+    });
+    if (snapshot.notification) {
+      pushNotification({ ...snapshot.notification, time: getTimestamp() });
+    }
+    setDemoState('recovered');
+  };
+
+  const handleAutoDemo = () => {
+    if (simulation.active) return;
+    setDemoState('abnormal');
+    triggerSimulationIncident('dosing_abnormal');
+    setIsPlaying(true);
+  };
+
   useKeyboard({
     phase,
     isHelpOpen,
@@ -289,6 +330,19 @@ export default function DashboardPage() {
         text: simulation.title,
         type: simulation.step === 8 ? 'success' : 'info',
       });
+
+      if (simulation.step === 8 && simulation.type) {
+        const targetAgent = INCIDENT_TO_AGENT[simulation.type];
+        pushNotification({
+          title: '异常已恢复',
+          description: `${AGENT_WINDOW_DATA[targetAgent].name}处置完成，系统恢复稳定巡检。`,
+          time: getTimestamp(),
+          agentId: targetAgent,
+          level: 'success',
+          autoDismissMs: 2000,
+        });
+        window.setTimeout(() => useScenarioStore.getState().forceIdle(), 2000);
+      }
     }
 
     if (simulation.type && simulation.step >= 2 && simulation.step <= 6) {
@@ -297,19 +351,6 @@ export default function DashboardPage() {
       setScenarioThinking(thinkingAgent, buildThinking(thinkingAgent, simulation.title, simulation.description));
     } else if (simulation.step >= 7) {
       clearScenarioThinking();
-    }
-
-    if (simulation.step === 8 && simulation.type) {
-      const targetAgent = INCIDENT_TO_AGENT[simulation.type];
-      pushNotification({
-        title: '异常已恢复',
-        description: `${AGENT_WINDOW_DATA[targetAgent].name}处置完成，系统恢复稳定巡检。`,
-        time: getTimestamp(),
-        agentId: targetAgent,
-        level: 'success',
-        autoDismissMs: 2000,
-      });
-      window.setTimeout(() => useScenarioStore.getState().forceIdle(), 2000);
     }
   }, [
     advanceScenarioPhase,
@@ -493,6 +534,15 @@ export default function DashboardPage() {
             </dl>
           </section>
         ) : null}
+
+        <DemoControlPanel
+          currentState={demoState}
+          isSimulationActive={simulation.active}
+          onTriggerAbnormal={handleDemoAbnormal}
+          onResetNormal={handleDemoNormal}
+          onApplyRecovered={handleDemoRecovered}
+          onAutoDemo={handleAutoDemo}
+        />
 
         <Taskbar
           windows={taskbarWindows}

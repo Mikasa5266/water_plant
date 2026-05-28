@@ -147,7 +147,7 @@ export const AgentCard: React.FC<AgentCardProps> = ({
                   step="0.1"
                   value={telemetry.dosingRate} 
                   onChange={(e) => setTelemetry(prev => ({ ...prev, dosingRate: parseFloat(e.target.value) }))}
-                  className="w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-teal-400"
+                  className="theme-slider"
                 />
               </div>
             )}
@@ -168,7 +168,7 @@ export const AgentCard: React.FC<AgentCardProps> = ({
                   step="1"
                   value={telemetry.ufPressure} 
                   onChange={(e) => setTelemetry(prev => ({ ...prev, ufPressure: parseInt(e.target.value) }))}
-                  className="w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-teal-400"
+                  className="theme-slider"
                 />
               </div>
             )}
@@ -189,7 +189,7 @@ export const AgentCard: React.FC<AgentCardProps> = ({
                   step="0.5"
                   value={telemetry.roFlux} 
                   onChange={(e) => setTelemetry(prev => ({ ...prev, roFlux: parseFloat(e.target.value) }))}
-                  className="w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-teal-400"
+                  className="theme-slider"
                 />
               </div>
             )}
