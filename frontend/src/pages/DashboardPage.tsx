@@ -22,6 +22,7 @@ import { InfoPanel } from '../components/InfoPanel';
 import { Notification } from '../components/Notification';
 import { Taskbar } from '../components/Taskbar';
 import { DemoControlPanel } from '../components/DemoControlPanel';
+import type { SpeedMultiplier } from '../components/DemoControlPanel';
 import { ParameterControlSidebar } from '../components/ParameterControlSidebar';
 import { WaterPlantCanvas3D } from '../components/WaterPlantCanvas3D';
 import { useScenarioStore } from '../stores/useScenarioStore';
@@ -99,6 +100,7 @@ export default function DashboardPage() {
   const [pulsingAgentId, setPulsingAgentId] = useState<AgentId | null>(null);
   const [windowStatusText, setWindowStatusText] = useState('');
   const [demoState, setDemoState] = useState<DemoState>('normal');
+  const [demoSpeed, setDemoSpeed] = useState<SpeedMultiplier>(1);
 
   const { animationTick, animationTickRef } = useAnimationLoop();
   const currentTime = useClock();
@@ -134,7 +136,7 @@ export default function DashboardPage() {
     setIsPlaying,
     simulationActive: simulation.active,
     simulationStep: simulation.step,
-  }, { loop: false });
+  }, { loop: false, stepInterval: 4000 / demoSpeed });
 
   const windows = useWindowStore((state) => state.windows);
   const activeWindowId = useWindowStore((state) => state.activeWindowId);
@@ -544,12 +546,35 @@ export default function DashboardPage() {
         ) : null}
 
         <DemoControlPanel
-          currentState={demoState}
           isSimulationActive={simulation.active}
-          onTriggerAbnormal={handleDemoAbnormal}
-          onResetNormal={handleDemoNormal}
-          onApplyRecovered={handleDemoRecovered}
-          onAutoDemo={handleAutoDemo}
+          simulationStep={simulation.step}
+          totalSteps={8}
+          simulationTitle={simulation.title}
+          autoDemoStatus={autoDemo.status}
+          onStartAutoDemo={(scenarioId) => {
+            setDemoState('abnormal');
+            autoDemo.startAutoDemo(scenarioId);
+          }}
+          onPauseAutoDemo={autoDemo.pause}
+          onResumeAutoDemo={autoDemo.resume}
+          onStopAutoDemo={() => {
+            autoDemo.stop();
+            setDemoState('normal');
+          }}
+          onTriggerManual={(scenarioId) => {
+            if (simulation.active) return;
+            setDemoState('abnormal');
+            triggerSimulationIncident(scenarioId);
+            setTimeout(() => setIsPlaying(false), 500);
+          }}
+          onNextStep={() => {
+            if (simulation.active && simulation.step < 8) {
+              runStepChange(simulation.step + 1);
+            }
+          }}
+          onReset={handleDemoNormal}
+          onSpeedChange={setDemoSpeed}
+          currentSpeed={demoSpeed}
         />
 
         <Taskbar
