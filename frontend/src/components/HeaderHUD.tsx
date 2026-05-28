@@ -1,6 +1,7 @@
-import React from 'react';
-import { Waves, Cpu, Gauge, RotateCcw, AlertTriangle } from 'lucide-react';
+import React, { useMemo } from 'react';
+import { Waves, Cpu, Gauge, RotateCcw, AlertTriangle, Heart } from 'lucide-react';
 import { AnomalySimulation, TelemetryState, AgentId, CardState } from '../types/index';
+import { useCountUp } from '../hooks/useCountUp';
 
 interface HeaderHUDProps {
   simulation: AnomalySimulation;
@@ -24,6 +25,23 @@ export const HeaderHUD: React.FC<HeaderHUDProps> = ({
   setTopZIndex
 }) => {
   const anyOpen = (Object.values(cards) as CardState[]).some(card => card.isOpen);
+  const animatedAgents = useCountUp(telemetry.activeAgentsCount, { duration: 500, decimals: 0 });
+  const animatedOnlineRate = useCountUp(telemetry.onlineRate, { duration: 700, decimals: 1 });
+  const animatedHealth = useCountUp(telemetry.healthScore, { duration: 800, decimals: 1 });
+
+  const healthColor = useMemo(() => {
+    if (telemetry.healthScore >= 90) return 'text-emerald-400';
+    if (telemetry.healthScore >= 70) return 'text-amber-400';
+    return 'text-rose-400';
+  }, [telemetry.healthScore]);
+
+  const healthLabel = useMemo(() => {
+    if (telemetry.healthScore >= 90) return '优良';
+    if (telemetry.healthScore >= 70) return '注意';
+    return '告警';
+  }, [telemetry.healthScore]);
+
+  const isAlarming = telemetry.healthScore < 70;
   return (
     <header 
       className="relative z-10 mx-4 mt-4 bg-slate-900/40 backdrop-blur-md border border-slate-800/60 rounded-xl"
@@ -70,14 +88,27 @@ export const HeaderHUD: React.FC<HeaderHUDProps> = ({
           <div className="flex items-center gap-2 px-3 py-1 bg-slate-950/40 border border-slate-800 rounded-md">
             <Cpu className="w-3.5 h-3.5 text-teal-400" />
             <span className="text-slate-400 text-[11px]">活跃智能体:</span>
-            <span className="text-emerald-400 font-bold">{telemetry.activeAgentsCount}</span>
+            <span className="text-emerald-400 font-bold tabular-nums transition-colors duration-500">{animatedAgents}</span>
             <span className="text-slate-500 text-[9px] px-1 py-0.2 bg-teal-500/10 rounded">Active</span>
           </div>
 
           <div className="flex items-center gap-2 px-3 py-1 bg-slate-950/40 border border-slate-800 rounded-md">
             <Gauge className="w-3.5 h-3.5 text-indigo-400" />
             <span className="text-slate-400 text-[11px]">设备在线率:</span>
-            <span className="text-indigo-400 font-bold">{telemetry.onlineRate}%</span>
+            <span className="text-indigo-400 font-bold tabular-nums transition-colors duration-500">{animatedOnlineRate}%</span>
+          </div>
+
+          <div className="flex items-center gap-2 px-3 py-1 bg-slate-950/40 border border-slate-800 rounded-md">
+            <Heart className={`w-3.5 h-3.5 ${healthColor} ${isAlarming ? 'animate-pulse' : ''}`} />
+            <span className="text-slate-400 text-[11px]">健康度:</span>
+            <span className={`font-bold tabular-nums transition-colors duration-700 ${healthColor} ${isAlarming ? 'animate-pulse scale-110' : ''}`}>
+              {animatedHealth}
+            </span>
+            <span className={`text-[9px] px-1 py-0.5 rounded transition-colors duration-700 ${
+              telemetry.healthScore >= 90 ? 'bg-emerald-500/10 text-emerald-400' :
+              telemetry.healthScore >= 70 ? 'bg-amber-500/10 text-amber-400' :
+              'bg-rose-500/10 text-rose-400'
+            }`}>{healthLabel}</span>
           </div>
 
           <div className="flex items-center gap-2 px-3 py-1 bg-slate-950/40 border border-slate-800 rounded-md">

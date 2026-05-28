@@ -1,7 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { ScenarioPhase, type AgentId, type ScenarioPhase as ScenarioPhaseType } from '../types/index';
 import { useScenarioStore } from '../stores/useScenarioStore';
-import { useWindowStore } from '../stores/useWindowStore';
 import { useSystemStore } from '../stores/useSystemStore';
 import { AGENT_WINDOW_DATA } from '../data/agentWindowData';
 import { getTimestamp } from '../utils/format';
@@ -40,7 +39,6 @@ export function usePhaseEffects(callbacks: PhaseEffectCallbacks) {
         case ScenarioPhase.DISPATCHING:
           if (targetAgentId) {
             onPulsingAgentChange(targetAgentId);
-            useWindowStore.getState().openWindow(targetAgentId);
           }
           onWindowStatusText('任务派发中...');
           break;

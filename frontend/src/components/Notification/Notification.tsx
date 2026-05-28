@@ -27,7 +27,7 @@ export function Notification({ notifications, onDismiss, onOpenAgent, className 
             animate={{ x: 0, opacity: 1, filter: 'blur(0px)' }}
             exit={{ x: 80, opacity: 0, filter: 'blur(2px)' }}
             transition={{ type: 'spring', stiffness: 300, damping: 25 }}
-            className={`pointer-events-auto cursor-pointer rounded-[var(--radius-panel)] border-l-4 bg-[var(--color-surface-base)] p-[var(--spacing-card)] text-slate-100 shadow-[var(--shadow-notification)] transition-transform hover:-translate-y-0.5 ${levelClassName[notification.level]}`}
+            className={`pointer-events-auto group cursor-pointer rounded-[var(--radius-panel)] border-l-4 bg-[var(--color-surface-base)] p-[var(--spacing-card)] text-slate-100 shadow-[var(--shadow-notification)] transition-transform hover:-translate-y-0.5 ${levelClassName[notification.level]}`}
             onClick={() => {
               onOpenAgent(notification.agentId);
               onDismiss(notification.id);
@@ -60,7 +60,7 @@ export function Notification({ notifications, onDismiss, onOpenAgent, className 
                 <X className="mx-auto h-4 w-4" />
               </button>
             </div>
-            <p className="mt-3 text-xs font-medium text-cyan-200">查看详情</p>
+            <p className="mt-3 text-xs font-medium text-cyan-200 transition-colors group-hover:text-cyan-100">查看详情 →</p>
           </motion.article>
         ))}
       </AnimatePresence>

@@ -1,2 +1,2 @@
 export { DemoControlPanel } from './DemoControlPanel';
-export type { DemoControlPanelProps } from './DemoControlPanel';
+export type { DemoControlPanelProps, DemoMode, SpeedMultiplier } from './DemoControlPanel';
