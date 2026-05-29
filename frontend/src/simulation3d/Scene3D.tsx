@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { Suspense, useRef } from 'react';
 import { Canvas } from '@react-three/fiber';
 import type { AgentId } from '../types';
 import { CameraController } from './CameraController';
@@ -106,8 +106,10 @@ export const Scene3D: React.FC<Scene3DProps> = ({ className }) => {
           {/* ─── 地面 ─── */}
           <Ground />
 
-          {/* ─── 监管中枢 ─── */}
-          <SupervisorHub />
+          {/* ─── 监管中枢（GLB 模型加载） ─── */}
+          <Suspense fallback={null}>
+            <SupervisorHub />
+          </Suspense>
 
           {/* ─── 设备模块 ─── */}
           <DosingModule />
@@ -118,10 +120,12 @@ export const Scene3D: React.FC<Scene3DProps> = ({ className }) => {
           {/* ─── 管道 ─── */}
           <PipelineSystem />
 
-          {/* ─── Agent 球体 ×4 ─── */}
-          {SPECIALIST_AGENTS.map((id) => (
-            <AgentNode key={id} agentId={id} />
-          ))}
+          {/* ─── Agent 模型 ×4（GLB 模型加载） ─── */}
+          <Suspense fallback={null}>
+            {SPECIALIST_AGENTS.map((id) => (
+              <AgentNode key={id} agentId={id} />
+            ))}
+          </Suspense>
 
           {/* ─── 粒子 ─── */}
           <ParticleSystem />

@@ -1,8 +1,8 @@
-import React, { useRef } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import { useFrame } from '@react-three/fiber';
+import { useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
-import type { AgentId } from '../../types';
-import { AGENT_3D_ANCHORS, DEVICE_ANCHORS } from '../../data/constants';
+import { DEVICE_ANCHORS } from '../../data/constants';
 import { useScenarioStore } from '../../stores/useScenarioStore';
 import { toThreePos } from '../utils/coordinates';
 
@@ -11,8 +11,9 @@ interface SupervisorHubProps {
 }
 
 /**
- * 监管中枢：大型蓝色发光圆柱体 + 旋转光环 (torus)
- * 位于场景中心，代表全厂大脑
+ * 监管中枢：保留圆柱体骨架 + 底座 + 双光环
+ * 顶部加载 surprior_model.glb（带骨骼的人形机器人模型），
+ * 自动包围盒居中，精确放置在圆柱顶端
  */
 export const SupervisorHub: React.FC<SupervisorHubProps> = () => {
   const anchor = DEVICE_ANCHORS.supervisor;
@@ -21,23 +22,70 @@ export const SupervisorHub: React.FC<SupervisorHubProps> = () => {
 
   const torusRef = useRef<THREE.Mesh>(null);
   const innerTorusRef = useRef<THREE.Mesh>(null);
+  const modelGroupRef = useRef<THREE.Group>(null);
+
+  // 加载 supervisor 模型
+  const { scene } = useGLTF('/models/surprior_model.glb');
+  const cloneRef = useRef<THREE.Group | null>(null);
+
+  /** 圆柱顶端 Y 坐标（模型放置目标） */
+  const CYLINDER_TOP_Y = 22;
+  /** 期望模型高度（约为圆柱高度的 75%） */
+  const TARGET_MODEL_HEIGHT = 15;
+
+  // 模型缩放和偏移，靠包围盒计算
+  const [modelOffset, setModelOffset] = useState({ y: 0, scale: 0.7 });
+
+  useEffect(() => {
+    // 用 SkeletonUtils 克隆
+    import('three-stdlib').then(({ SkeletonUtils }) => {
+      const cloned = SkeletonUtils.clone(scene) as THREE.Group;
+
+      // 计算包围盒
+      const box = new THREE.Box3().setFromObject(cloned);
+      const size = new THREE.Vector3();
+      const center = new THREE.Vector3();
+      box.getSize(size);
+      box.getCenter(center);
+
+      // 自动计算缩放：目标高度 / 实际高度
+      const autoScale = TARGET_MODEL_HEIGHT / size.y;
+
+      // 模型底部 Y = center.y - size.y/2
+      // 要使模型底部落在 CYLINDER_TOP_Y，需要偏移：CYLINDER_TOP_Y - (center.y - size.y/2)
+      const feetY = center.y - size.y / 2;
+      const autoOffset = CYLINDER_TOP_Y - feetY;
+
+      cloneRef.current = cloned;
+      setModelOffset({ y: autoOffset, scale: autoScale });
+
+      console.log(
+        `[SupervisorHub] Box3 size=${size.x.toFixed(1)}x${size.y.toFixed(1)}x${size.z.toFixed(1)} ` +
+        `center=${center.x.toFixed(1)},${center.y.toFixed(1)},${center.z.toFixed(1)} ` +
+        `→ scale=${autoScale.toFixed(2)}, yOffset=${autoOffset.toFixed(1)}`
+      );
+    });
+  }, [scene]);
 
   // 读取 store：分析中/派发中 加速旋转
   const phase = useScenarioStore((s) => s.phase);
 
   useFrame((_, delta) => {
-    // 分析中、派发中加速光环
     const isActive = phase === 'analyzing' || phase === 'dispatching';
     const speed = isActive ? 2.4 : 0.8;
 
+    // 光环旋转
     if (torusRef.current) {
       torusRef.current.rotation.y += delta * speed;
       torusRef.current.rotation.x += delta * 0.15;
     }
-
-    // 内层光环反向旋转
     if (innerTorusRef.current) {
       innerTorusRef.current.rotation.z += delta * speed * 0.6;
+    }
+
+    // 模型自转
+    if (modelGroupRef.current) {
+      modelGroupRef.current.rotation.y += delta * speed * 0.3;
     }
   });
 
@@ -69,16 +117,14 @@ export const SupervisorHub: React.FC<SupervisorHubProps> = () => {
         <meshBasicMaterial color="#5ba0f5" wireframe transparent opacity={0.15} />
       </mesh>
 
-      {/* 顶部发光核心球 */}
-      <mesh position={[0, 22.5, 0]}>
-        <sphereGeometry args={[2.2, 32, 32]} />
-        <meshStandardMaterial
-          color="#ffffff"
-          emissive="#378ADD"
-          emissiveIntensity={1.5}
-          roughness={0.1}
-        />
-      </mesh>
+      {/* surprior_model — 监管 Agent 模型（包围盒自动居中） */}
+      <group
+        ref={modelGroupRef}
+        position={[0, modelOffset.y, 0]}
+        scale={modelOffset.scale}
+      >
+        {cloneRef.current && <primitive object={cloneRef.current} />}
+      </group>
 
       {/* 旋转光环 torus */}
       <mesh ref={torusRef} position={[0, 14, 0]}>
