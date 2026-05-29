@@ -74,6 +74,30 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/AgentRun"
+  /api/ai/analyze:
+    post:
+      tags:
+        - Agent
+      summary: Stream AI analysis for an incident
+      operationId: streamAIAnalysis
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AIAnalyzeRequest"
+      responses:
+        "200":
+          description: SSE stream of AI analysis tokens
+          content:
+            text/event-stream:
+              schema:
+                type: string
+                description: |
+                  SSE events with JSON data:
+                  - {"type": "token", "content": "..."} for each token
+                  - {"type": "done"} when complete
+                  - {"type": "error", "message": "..."} on failure
 components:
   schemas:
     PlantOverview:
@@ -245,3 +269,26 @@ components:
         createdAt:
           type: string
           format: date-time
+    AIAnalyzeRequest:
+      type: object
+      required:
+        - incident_type
+        - phase
+        - telemetry
+      properties:
+        incident_type:
+          type: string
+          enum:
+            - dosing_abnormal
+            - uf_clogging
+            - ro_fouling
+            - pump_overload
+        phase:
+          type: string
+          enum:
+            - supervisor
+            - agent
+        telemetry:
+          type: object
+          additionalProperties: true
+          description: Current telemetry snapshot (TelemetryState)

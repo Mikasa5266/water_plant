@@ -23,7 +23,7 @@ export function InfoPanel({ currentAgent, thinking, decisionSteps, events, class
     if (thinkingRef.current) {
       thinkingRef.current.scrollTop = thinkingRef.current.scrollHeight;
     }
-  }, [thinking]);
+  }, [thinking?.text]);
 
   return (
     <aside className={`flex flex-col gap-[var(--spacing-gap)] border-l border-[var(--color-border-default)] bg-[var(--color-surface-overlay)] p-[var(--spacing-panel)] text-slate-100 ${className}`}>
@@ -44,7 +44,15 @@ export function InfoPanel({ currentAgent, thinking, decisionSteps, events, class
         {thinking ? (
           <div ref={thinkingRef} className="mt-2 max-h-48 overflow-y-auto space-y-2 rounded-[var(--radius-card)] border border-[var(--color-border-default)] bg-slate-900/60 p-[var(--spacing-card)]">
             <p className="text-sm font-semibold">{thinking.title}</p>
-            <p className="text-xs leading-5 text-slate-300 whitespace-pre-wrap">{thinking.summary}</p>
+            <p className="text-xs leading-5 text-slate-300 whitespace-pre-wrap">
+              {thinking.text}
+              {thinking.status === 'streaming' && (
+                <span className="inline-block w-[2px] h-[1em] ml-0.5 align-middle bg-cyan-400 animate-pulse" />
+              )}
+            </p>
+            {thinking.status === 'error' && (
+              <p className="text-xs text-red-400">分析请求失败，请稍后重试</p>
+            )}
           </div>
         ) : (
           <p className="mt-2 text-sm text-slate-500">Idle</p>

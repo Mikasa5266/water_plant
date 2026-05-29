@@ -40,45 +40,33 @@ const ThinkingBubbleContent: React.FC<{
   // 气泡悬浮在 agent 上方 8 单位（scale 内坐标）
   const bubblePos: [number, number, number] = [pos[0], pos[1] + 8, pos[2]];
 
-  // 打字机效果
-  const [displayedPoints, setDisplayedPoints] = useState<string[]>([]);
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [currentChar, setCurrentChar] = useState(0);
+  // 逐字符显示（仅在非流式场景使用本地动画，流式时直接显示 text）
+  const [displayedLength, setDisplayedLength] = useState(0);
 
   useEffect(() => {
-    setDisplayedPoints([]);
-    setCurrentIndex(0);
-    setCurrentChar(0);
-  }, [thinking]);
+    setDisplayedLength(0);
+  }, [thinking.title]);
 
   useEffect(() => {
-    if (currentIndex >= thinking.points.length) return;
-
-    const point = thinking.points[currentIndex];
-    if (currentChar >= point.length) {
-      const timer = setTimeout(() => {
-        setCurrentIndex((i) => i + 1);
-        setCurrentChar(0);
-      }, 300);
-      return () => clearTimeout(timer);
+    if (thinking.status === 'streaming' || thinking.status === 'done') {
+      setDisplayedLength(thinking.text.length);
+      return;
     }
+    if (displayedLength >= thinking.text.length) return;
 
     const timer = setTimeout(() => {
-      setCurrentChar((c) => c + 1);
-      setDisplayedPoints((prev) => {
-        const next = [...prev];
-        next[currentIndex] = point.slice(0, currentChar + 1);
-        return next;
-      });
+      setDisplayedLength((n) => n + 1);
     }, 25);
     return () => clearTimeout(timer);
-  }, [currentIndex, currentChar, thinking.points]);
+  }, [displayedLength, thinking.text, thinking.status]);
+
+  const displayText = thinking.text.slice(0, displayedLength);
+  const lines = displayText.split('\n').filter(Boolean);
 
   return (
     <Html
       position={bubblePos}
       center
-      /* 不设 distanceFactor → 屏幕空间固定尺寸，不受距离缩放 */
       style={{ pointerEvents: 'auto' }}
     >
       <div
@@ -88,7 +76,9 @@ const ThinkingBubbleContent: React.FC<{
           borderRadius: 10,
           padding: '12px 16px',
           minWidth: 240,
-          maxWidth: 340,
+          maxWidth: 380,
+          maxHeight: 260,
+          overflowY: 'auto',
           color: '#e2e8f0',
           fontFamily:
             '-apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif',
@@ -100,7 +90,7 @@ const ThinkingBubbleContent: React.FC<{
           boxShadow: '0 4px 24px rgba(0, 0, 0, 0.4), 0 0 20px rgba(56, 189, 248, 0.12)',
           position: 'relative',
           userSelect: 'none',
-          whiteSpace: 'nowrap',
+          wordBreak: 'break-word',
         }}
         title="点击关闭"
         onClick={() => {
@@ -130,43 +120,40 @@ const ThinkingBubbleContent: React.FC<{
             marginBottom: 6,
             paddingBottom: 5,
             borderBottom: '1px solid rgba(56, 189, 248, 0.2)',
-            whiteSpace: 'nowrap',
-          }}
+            }}
         >
           {thinking.title}
         </div>
 
-        {/* 推理要点（打字机效果） */}
-        {thinking.points.slice(0, currentIndex + 1).map((_, i) => (
+        {/* 推理内容 */}
+        {lines.map((line, i) => (
           <div
             key={i}
             style={{
-              color: i === currentIndex ? '#f1f5f9' : '#94a3b8',
+              color: i === lines.length - 1 ? '#f1f5f9' : '#94a3b8',
               paddingLeft: 8,
               borderLeft: '2px solid rgba(56, 189, 248, 0.35)',
               marginBottom: 3,
               fontSize: 13,
               lineHeight: 1.6,
-              whiteSpace: 'nowrap',
             }}
           >
-            {displayedPoints[i] ?? ''}
-            {i === currentIndex &&
-              currentChar < thinking.points[currentIndex].length && (
-                <span
-                  style={{
-                    display: 'inline-block',
-                    width: 1.5,
-                    height: 13,
-                    background: '#38bdf8',
-                    marginLeft: 1,
-                    verticalAlign: 'middle',
-                    animation: 'blink 0.7s infinite',
-                  }}
-                />
-              )}
+            {line}
           </div>
         ))}
+        {thinking.status === 'streaming' && (
+          <span
+            style={{
+              display: 'inline-block',
+              width: 1.5,
+              height: 13,
+              background: '#38bdf8',
+              marginLeft: 1,
+              verticalAlign: 'middle',
+              animation: 'blink 0.7s infinite',
+            }}
+          />
+        )}
       </div>
     </Html>
   );

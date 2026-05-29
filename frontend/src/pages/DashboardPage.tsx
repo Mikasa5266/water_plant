@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Activity } from 'lucide-react';
 import { AnimatePresence } from 'motion/react';
-import type { AgentId, AgentRunStatus, AgentUIStatus, TelemetryState } from '../types/index';
+import type { AgentId, AgentRunStatus, AgentUIStatus, IncidentType, TelemetryState } from '../types/index';
 import { ScenarioPhase } from '../types/index';
 import { DEFAULT_TELEMETRY } from '../data/defaultTelemetry';
 import { useAnimationLoop } from '../hooks/useAnimationLoop';
@@ -28,6 +28,7 @@ import { WaterPlantCanvas3D } from '../components/WaterPlantCanvas3D';
 import { useScenarioStore } from '../stores/useScenarioStore';
 import { useSystemStore } from '../stores/useSystemStore';
 import { useWindowStore } from '../stores/useWindowStore';
+import { useStreamingAI } from '../hooks/useStreamingAI';
 import { getTimestamp } from '../utils/format';
 
 const RUN_STATUS_TO_UI: Record<AgentRunStatus, AgentUIStatus> = {
@@ -146,6 +147,33 @@ export default function DashboardPage() {
   const pushNotification = useSystemStore((state) => state.pushNotification);
   const dismissNotification = useSystemStore((state) => state.dismissNotification);
   const clearNotifications = useSystemStore((state) => state.clearNotifications);
+
+  const { startStream, abort: abortStream } = useStreamingAI();
+  const incidentType = useScenarioStore((state) => state.incidentType);
+
+  useEffect(() => {
+    if (phase === ScenarioPhase.SUPERVISOR_ANALYZING && incidentType) {
+      startStream({
+        agentId: 'supervisor',
+        incidentType: incidentType as IncidentType,
+        phase: 'supervisor',
+        telemetry: telemetry,
+        title: '监管智能体正在分析',
+        onDone: () => advanceScenarioPhase(),
+      });
+    } else if (phase === ScenarioPhase.AGENT_ANALYZING && incidentType && targetAgentId) {
+      startStream({
+        agentId: targetAgentId,
+        incidentType: incidentType as IncidentType,
+        phase: 'agent',
+        telemetry: telemetry,
+        title: `${AGENT_WINDOW_DATA[targetAgentId].name}执行推演`,
+        onDone: () => advanceScenarioPhase(),
+      });
+    } else if (phase === ScenarioPhase.IDLE) {
+      abortStream();
+    }
+  }, [phase]);
 
   const visibleAgentId = activeWindowId ?? activeAgentId ?? targetAgentId;
   const currentAgent = visibleAgentId
@@ -307,8 +335,19 @@ export default function DashboardPage() {
 
     const expectedPhase = STEP_TO_PHASE[simulation.step];
     if (expectedPhase && phase !== expectedPhase) {
+      const currentPhase = useScenarioStore.getState().phase;
+      if (
+        currentPhase === ScenarioPhase.SUPERVISOR_ANALYZING ||
+        currentPhase === ScenarioPhase.AGENT_ANALYZING
+      ) {
+        return;
+      }
       let guard = 0;
       while (useScenarioStore.getState().phase !== expectedPhase && guard < 8) {
+        const p = useScenarioStore.getState().phase;
+        if (p === ScenarioPhase.SUPERVISOR_ANALYZING || p === ScenarioPhase.AGENT_ANALYZING) {
+          break;
+        }
         advanceScenarioPhase();
         guard += 1;
       }

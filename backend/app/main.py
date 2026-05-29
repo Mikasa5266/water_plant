@@ -1,8 +1,13 @@
+from dotenv import load_dotenv
+load_dotenv()
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from datetime import datetime, timezone
 from uuid import uuid4
+
+from .routers.ai import router as ai_router
 
 app = FastAPI(title="Smart Water Plant API", version="0.1.0")
 
@@ -12,6 +17,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.include_router(ai_router, prefix="/api")
 
 
 @app.get("/plant/overview")

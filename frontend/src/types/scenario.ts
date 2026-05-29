@@ -34,12 +34,14 @@ export type IncidentType = 'dosing_abnormal' | 'uf_clogging' | 'ro_fouling' | 'p
 
 export type ParticleIntent = 'anomaly' | 'dispatch' | 'execute';
 
-// ─── 思考气泡内容 ───
+// ─── 思考气泡内容（流式文本） ───
+
+export type StreamingStatus = 'idle' | 'streaming' | 'done' | 'error';
 
 export interface ThinkingContent {
   title: string;
-  summary: string;
-  points: string[];
+  text: string;
+  status: StreamingStatus;
 }
 
 // ─── 决策链步骤 ───

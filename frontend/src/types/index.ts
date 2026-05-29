@@ -6,6 +6,7 @@ export type {
   AgentStatusMap,
   IncidentType,
   ParticleIntent,
+  StreamingStatus,
   ThinkingContent,
   DecisionStep,
   EventLogEntry,
@@ -26,6 +27,15 @@ export type {
   WindowState,
   LODLevel,
 } from './scenario';
+
+export type {
+  AIAnalysisPhase,
+  AIAnalyzeRequest,
+  AIStreamToken,
+  AIStreamDone,
+  AIStreamError,
+  AIStreamEvent,
+} from './ai';
 
 export type {
   PlantStatus,
