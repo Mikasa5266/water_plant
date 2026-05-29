@@ -70,14 +70,6 @@ const KEYBOARD_SHORTCUTS: HelpShortcutItem[] = [
   { keys: 'Esc', description: '按优先级关闭浮层、终止场景、关闭通知或最小化窗口' },
 ];
 
-function buildThinking(agentId: AgentId, title: string, description: string) {
-  return {
-    title: `${AGENT_WINDOW_DATA[agentId].name}正在分析`,
-    summary: description,
-    points: ['读取实时遥测与事件日志', '对照阈值定位异常来源', `当前决策：${title}`],
-  };
-}
-
 export default function DashboardPage() {
   const containerRef = useRef<HTMLDivElement>(null);
   const [telemetry, setTelemetry] = useState<TelemetryState>(DEFAULT_TELEMETRY);
@@ -146,7 +138,6 @@ export default function DashboardPage() {
   const decisionSteps = useScenarioStore((state) => state.decisionSteps);
   const startScenarioIncident = useScenarioStore((state) => state.startIncident);
   const advanceScenarioPhase = useScenarioStore((state) => state.advancePhase);
-  const setScenarioThinking = useScenarioStore((state) => state.setThinking);
   const clearScenarioThinking = useScenarioStore((state) => state.clearThinking);
   const forceScenarioIdle = useScenarioStore((state) => state.forceIdle);
   const eventLog = useSystemStore((state) => state.eventLog);
@@ -344,21 +335,11 @@ export default function DashboardPage() {
         window.setTimeout(() => useScenarioStore.getState().forceIdle(), 2000);
       }
     }
-
-    if (simulation.type && simulation.step >= 2 && simulation.step <= 6) {
-      const targetAgent = INCIDENT_TO_AGENT[simulation.type];
-      const thinkingAgent = simulation.step >= 5 ? targetAgent : 'supervisor';
-      setScenarioThinking(thinkingAgent, buildThinking(thinkingAgent, simulation.title, simulation.description));
-    } else if (simulation.step >= 7) {
-      clearScenarioThinking();
-    }
   }, [
     advanceScenarioPhase,
-    clearScenarioThinking,
     phase,
     pushEvent,
     pushNotification,
-    setScenarioThinking,
     simulation.active,
     simulation.description,
     simulation.step,
