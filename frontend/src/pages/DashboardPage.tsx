@@ -62,6 +62,18 @@ const STEP_TO_PHASE: Record<number, ScenarioPhase> = {
   8: ScenarioPhase.RECOVERED,
 };
 
+const PHASE_ORDER: ScenarioPhase[] = [
+  ScenarioPhase.IDLE,
+  ScenarioPhase.ANOMALY_DETECTED,
+  ScenarioPhase.SUPERVISOR_ANALYZING,
+  ScenarioPhase.DISPATCHING,
+  ScenarioPhase.AGENT_ANALYZING,
+  ScenarioPhase.EXECUTING,
+  ScenarioPhase.DEVICE_OPERATING,
+  ScenarioPhase.RECOVERING,
+  ScenarioPhase.RECOVERED,
+];
+
 const KEYBOARD_SHORTCUTS: HelpShortcutItem[] = [
   { keys: 'Ctrl+1', description: '触发加药异常场景' },
   { keys: 'Ctrl+2', description: '触发超滤异常场景' },
@@ -97,6 +109,7 @@ export default function DashboardPage() {
   const currentTime = useClock();
   const lastIncidentRef = useRef<string | null>(null);
   const lastEventStepRef = useRef<number | null>(null);
+  const lastSyncedStepRef = useRef<number | null>(null);
   const { agentStatuses, setAgentStatuses, agentLogs, setAgentLogs } = useAgentState();
   const { cards, setCards, topZIndex, setTopZIndex, handleStartDrag, toggleAgentCard, closeAgentCard } =
     useAgentCards(containerRef);
@@ -314,6 +327,7 @@ export default function DashboardPage() {
     if (!simulation.active || !simulation.type) {
       lastIncidentRef.current = null;
       lastEventStepRef.current = null;
+      lastSyncedStepRef.current = null;
       clearScenarioThinking();
       forceScenarioIdle();
       return;
@@ -354,7 +368,14 @@ export default function DashboardPage() {
     if (!simulation.active) return;
 
     const expectedPhase = STEP_TO_PHASE[simulation.step];
-    if (expectedPhase && phase !== expectedPhase) {
+    if (expectedPhase && phase === expectedPhase) {
+      lastSyncedStepRef.current = simulation.step;
+    }
+    if (
+      expectedPhase &&
+      lastSyncedStepRef.current !== simulation.step &&
+      phase !== expectedPhase
+    ) {
       const currentPhase = useScenarioStore.getState().phase;
       if (
         currentPhase === ScenarioPhase.SUPERVISOR_ANALYZING ||
@@ -362,8 +383,10 @@ export default function DashboardPage() {
       ) {
         return; // 等待 AI 流式完成后 onDone 推进
       }
+      const currentIndex = PHASE_ORDER.indexOf(currentPhase);
+      const expectedIndex = PHASE_ORDER.indexOf(expectedPhase);
       let guard = 0;
-      while (useScenarioStore.getState().phase !== expectedPhase && guard < 8) {
+      while (currentIndex >= 0 && expectedIndex > currentIndex && guard < 1) {
         const p = useScenarioStore.getState().phase;
         if (p === ScenarioPhase.SUPERVISOR_ANALYZING || p === ScenarioPhase.AGENT_ANALYZING) {
           break; // 遇到 ANALYZING 停住，等 AI onDone
@@ -391,14 +414,22 @@ export default function DashboardPage() {
           level: 'success',
           autoDismissMs: 2000,
         });
-        window.setTimeout(() => useScenarioStore.getState().forceIdle(), 2000);
+        if (autoDemo.status !== 'playing') {
+          window.setTimeout(() => {
+            resetToNormal();
+            useScenarioStore.getState().forceIdle();
+            useScenarioStore.getState().clearThinking();
+          }, 2000);
+        }
       }
     }
   }, [
     advanceScenarioPhase,
+    autoDemo.status,
     phase,
     pushEvent,
     pushNotification,
+    resetToNormal,
     simulation.active,
     simulation.step,
     simulation.title,

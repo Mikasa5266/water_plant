@@ -4,6 +4,8 @@ import { getTimestamp } from '../../utils/format';
 import { getScenarioMeta } from './simulationScripts';
 import { applyDosingStep, applyUfStep, applyRoStep, applyPumpStep } from './stepAppliers';
 import { DEFAULT_TELEMETRY } from '../../data/defaultTelemetry';
+import { useScenarioStore } from '../../stores/useScenarioStore';
+import { ScenarioPhase } from '../../types/index';
 
 interface UseSimulationDeps {
   animationTickRef: React.RefObject<number>;
@@ -45,11 +47,13 @@ export function useSimulation(deps: UseSimulationDeps) {
   const telemetryRef = useRef(telemetry);
   const agentStatusesRef = useRef(agentStatuses);
   const agentLogsRef = useRef(agentLogs);
+  const activeAnimRef = useRef(activeAnim);
 
   useEffect(() => { simulationRef.current = simulation; }, [simulation]);
   useEffect(() => { telemetryRef.current = telemetry; }, [telemetry]);
   useEffect(() => { agentStatusesRef.current = agentStatuses; }, [agentStatuses]);
   useEffect(() => { agentLogsRef.current = agentLogs; }, [agentLogs]);
+  useEffect(() => { activeAnimRef.current = activeAnim; }, [activeAnim]);
 
   const getActiveAgentForStep = (type: IncidentType | null, step: number): AgentId => {
     if (!type) return 'supervisor';
@@ -59,6 +63,11 @@ export function useSimulation(deps: UseSimulationDeps) {
     if (type === 'ro_fouling') return 'ro';
     if (type === 'pump_overload') return 'pump';
     return 'supervisor';
+  };
+
+  const isWaitingForAiPhase = () => {
+    const phase = useScenarioStore.getState().phase;
+    return phase === ScenarioPhase.SUPERVISOR_ANALYZING || phase === ScenarioPhase.AGENT_ANALYZING;
   };
 
   const triggerCalibrationAnimation = (agentId: AgentId) => {
@@ -98,6 +107,9 @@ export function useSimulation(deps: UseSimulationDeps) {
   const runStepChange = (targetStep: number) => {
     const sim = simulationRef.current;
     if (!sim.active || !sim.type) return;
+    if (activeAnimRef.current) return;
+    if (isWaitingForAiPhase()) return;
+    if (targetStep <= sim.step || targetStep > 8) return;
     const leadingAgent = getActiveAgentForStep(sim.type, targetStep);
     setActiveAnim({
       agentId: leadingAgent,
@@ -164,6 +176,7 @@ export function useSimulation(deps: UseSimulationDeps) {
     let interval: any;
     if (isPlaying && simulation.active) {
       interval = setInterval(() => {
+        if (activeAnimRef.current) return;
         if (simulationRef.current.step < 8) {
           runStepChange(simulationRef.current.step + 1);
         } else {
