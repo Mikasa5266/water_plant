@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Activity } from 'lucide-react';
 import { AnimatePresence } from 'motion/react';
-import type { AgentId, TelemetryState } from '../types/index';
+import type { AgentId, AgentRunStatus, AgentUIStatus, TelemetryState } from '../types/index';
 import { ScenarioPhase } from '../types/index';
 import { DEFAULT_TELEMETRY } from '../data/defaultTelemetry';
 import { useAnimationLoop } from '../hooks/useAnimationLoop';
@@ -29,6 +29,15 @@ import { useScenarioStore } from '../stores/useScenarioStore';
 import { useSystemStore } from '../stores/useSystemStore';
 import { useWindowStore } from '../stores/useWindowStore';
 import { getTimestamp } from '../utils/format';
+
+const RUN_STATUS_TO_UI: Record<AgentRunStatus, AgentUIStatus> = {
+  idle: 'normal',
+  monitoring: 'normal',
+  thinking: 'pending',
+  processing: 'pending',
+  warning: 'alarm',
+  executing: 'recovering',
+};
 
 const INCIDENT_TO_AGENT: Record<string, AgentId> = {
   dosing_abnormal: 'dosing',
@@ -129,6 +138,7 @@ export default function DashboardPage() {
   const closeAllWindows = useWindowStore((state) => state.closeAllWindows);
   const cycleWindow = useWindowStore((state) => state.cycleWindow);
   const agentUIStatus = useScenarioStore((state) => state.agentUIStatus);
+  const agentRunStatuses = useScenarioStore((state) => state.agentRunStatuses);
   const phase = useScenarioStore((state) => state.phase);
   const activeAgentId = useScenarioStore((state) => state.activeAgentId);
   const targetAgentId = useScenarioStore((state) => state.targetAgentId);
@@ -154,17 +164,20 @@ export default function DashboardPage() {
         status: agentUIStatus,
       }
     : null;
-  const dockAgents = AGENT_ORDER.map((agentId) => ({
-    id: agentId,
-    label: AGENT_WINDOW_DATA[agentId].englishName,
-    status: agentUIStatus,
-    badgeCount: agentUIStatus === 'alarm' && targetAgentId === agentId ? 1 : undefined,
-    isActive: activeWindowId === agentId && !windows[agentId].isMinimized,
-  }));
+  const dockAgents = AGENT_ORDER.map((agentId) => {
+    const uiStatus = RUN_STATUS_TO_UI[agentRunStatuses[agentId]];
+    return {
+      id: agentId,
+      label: AGENT_WINDOW_DATA[agentId].englishName,
+      status: uiStatus,
+      badgeCount: uiStatus === 'alarm' && targetAgentId === agentId ? 1 : undefined,
+      isActive: activeWindowId === agentId && !windows[agentId].isMinimized,
+    };
+  });
   const taskbarWindows = AGENT_ORDER.filter((agentId) => windows[agentId].isOpen).map((agentId) => ({
     agentId,
     title: AGENT_WINDOW_DATA[agentId].name,
-    status: agentUIStatus,
+    status: RUN_STATUS_TO_UI[agentRunStatuses[agentId]],
     isActive: activeWindowId === agentId,
     isMinimized: windows[agentId].isMinimized,
   }));
