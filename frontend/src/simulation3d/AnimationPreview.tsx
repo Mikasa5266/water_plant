@@ -52,48 +52,28 @@ const AnimationPreview: React.FC = () => {
     const messages: Record<AgentId, ThinkingContent> = {
       supervisor: {
         title: '监管中枢',
-        summary: '',
-        points: [
-          '问题：全厂传感器异常信号',
-          '分析：数据上送 + 根因定位',
-          '方案：派发专项Agent处置',
-        ],
+        text: '问题：全厂传感器异常信号\n分析：数据上送 + 根因定位\n方案：派发专项Agent处置',
+        status: 'done',
       },
       dosing: {
         title: '加药Agent',
-        summary: '',
-        points: [
-          '问题：PAC投加率偏差',
-          '分析：浊度反馈异常',
-          '方案：调整至 5.2 mg/L',
-        ],
+        text: '问题：PAC投加率偏差\n分析：浊度反馈异常\n方案：调整至 5.2 mg/L',
+        status: 'done',
       },
       uf: {
         title: '超滤Agent',
-        summary: '',
-        points: [
-          '问题：跨膜压差持续上升',
-          '分析：膜污染趋势加速',
-          '方案：启动CEB化学清洗',
-        ],
+        text: '问题：跨膜压差持续上升\n分析：膜污染趋势加速\n方案：启动CEB化学清洗',
+        status: 'done',
       },
       ro: {
         title: 'RO Agent',
-        summary: '',
-        points: [
-          '问题：膜通量衰减超标',
-          '分析：进水SDI偏高',
-          '方案：降低回收率至72%',
-        ],
+        text: '问题：膜通量衰减超标\n分析：进水SDI偏高\n方案：降低回收率至72%',
+        status: 'done',
       },
       pump: {
         title: '泵组Agent',
-        summary: '',
-        points: [
-          '问题：电流波动异常',
-          '分析：轴承温度偏高',
-          '方案：切换备用泵',
-        ],
+        text: '问题：电流波动异常\n分析：轴承温度偏高\n方案：切换备用泵',
+        status: 'done',
       },
     };
     useScenarioStore.getState().setThinking(agentId, messages[agentId]);

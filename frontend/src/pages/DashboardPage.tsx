@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { Activity } from 'lucide-react';
 import { AnimatePresence } from 'motion/react';
-import type { AgentId, TelemetryState } from '../types/index';
+import type { AgentId, AgentRunStatus, AgentUIStatus, IncidentType, TelemetryState } from '../types/index';
 import { ScenarioPhase } from '../types/index';
+import { DEFAULT_TELEMETRY } from '../data/defaultTelemetry';
 import { useAnimationLoop } from '../hooks/useAnimationLoop';
 import { useClock } from '../hooks/useClock';
 import { useKeyboard } from '../hooks/useKeyboard';
@@ -27,7 +28,19 @@ import { WaterPlantCanvas3D } from '../components/WaterPlantCanvas3D';
 import { useScenarioStore } from '../stores/useScenarioStore';
 import { useSystemStore } from '../stores/useSystemStore';
 import { useWindowStore } from '../stores/useWindowStore';
+import { useStreamingAI } from '../hooks/useStreamingAI';
 import { getTimestamp } from '../utils/format';
+
+// ─── 类型映射 ───
+
+const RUN_STATUS_TO_UI: Record<AgentRunStatus, AgentUIStatus> = {
+  idle: 'normal',
+  monitoring: 'normal',
+  thinking: 'pending',
+  processing: 'pending',
+  warning: 'alarm',
+  executing: 'recovering',
+};
 
 const INCIDENT_TO_AGENT: Record<string, AgentId> = {
   dosing_abnormal: 'dosing',
@@ -35,6 +48,8 @@ const INCIDENT_TO_AGENT: Record<string, AgentId> = {
   ro_fouling: 'ro',
   pump_overload: 'pump',
 };
+
+// ─── 步进→阶段 映射（auto-play 步进同步用） ───
 
 const STEP_TO_PHASE: Record<number, ScenarioPhase> = {
   1: ScenarioPhase.ANOMALY_DETECTED,
@@ -60,38 +75,15 @@ const KEYBOARD_SHORTCUTS: HelpShortcutItem[] = [
   { keys: 'Esc', description: '按优先级关闭浮层、终止场景、关闭通知或最小化窗口' },
 ];
 
-function buildThinking(agentId: AgentId, title: string, description: string) {
-  return {
-    title: `${AGENT_WINDOW_DATA[agentId].name}正在分析`,
-    summary: description,
-    points: ['读取实时遥测与事件日志', '对照阈值定位异常来源', `当前决策：${title}`],
-  };
-}
+// ─── DashboardPage ───
+// 兼容说明（2026-05-29 合并后）：
+//   - thinking 数据由 A 的 useStreamingAI 流式写入，不再由 B 的 buildThinking 手动构造
+//   - ANALYZING 阶段的 phase 推进由 AI onDone 触发，步进同步 useEffect 中的 guard 阻塞
+//   - B 的 BubbleOverlay 从 store 读取 thinking.text + thinking.status 渲染
 
 export default function DashboardPage() {
   const containerRef = useRef<HTMLDivElement>(null);
-  const [telemetry, setTelemetry] = useState<TelemetryState>({
-    inletFlow: 1240,
-    outletFlow: 1210,
-    inletTurbidity: 18.5,
-    outletTurbidity: 0.04,
-    dosingRate: 4.8,
-    chemicalLevel: 72,
-    ufPressure: 82,
-    roPressureDiff: 0.45,
-    roFlux: 74.5,
-    roConductivity: 18,
-    roFlushMode: 'ready',
-    roRecoveryTime: 0,
-    pumpSpeed: 1480,
-    pumpCurrent: 28,
-    pumpTemperature: 55,
-    pumpStatus: 'normal',
-    energyConsumption: 0.22,
-    healthScore: 98,
-    activeAgentsCount: 5,
-    onlineRate: 99.2,
-  });
+  const [telemetry, setTelemetry] = useState<TelemetryState>(DEFAULT_TELEMETRY);
   const [activeTab, setActiveTab] = useState<'model' | 'simulation_studio'>('model');
   const [camera, setCamera] = useState({ yaw: -35, pitch: 35, zoom: 0.95 });
   const [isHelpOpen, setIsHelpOpen] = useState(false);
@@ -137,6 +129,7 @@ export default function DashboardPage() {
     simulationStep: simulation.step,
   }, { loop: false, stepInterval: 4000 / demoSpeed });
 
+  // ─── Zustand store 订阅 ───
   const windows = useWindowStore((state) => state.windows);
   const activeWindowId = useWindowStore((state) => state.activeWindowId);
   const openWindow = useWindowStore((state) => state.openWindow);
@@ -149,6 +142,7 @@ export default function DashboardPage() {
   const closeAllWindows = useWindowStore((state) => state.closeAllWindows);
   const cycleWindow = useWindowStore((state) => state.cycleWindow);
   const agentUIStatus = useScenarioStore((state) => state.agentUIStatus);
+  const agentRunStatuses = useScenarioStore((state) => state.agentRunStatuses);
   const phase = useScenarioStore((state) => state.phase);
   const activeAgentId = useScenarioStore((state) => state.activeAgentId);
   const targetAgentId = useScenarioStore((state) => state.targetAgentId);
@@ -156,7 +150,6 @@ export default function DashboardPage() {
   const decisionSteps = useScenarioStore((state) => state.decisionSteps);
   const startScenarioIncident = useScenarioStore((state) => state.startIncident);
   const advanceScenarioPhase = useScenarioStore((state) => state.advancePhase);
-  const setScenarioThinking = useScenarioStore((state) => state.setThinking);
   const clearScenarioThinking = useScenarioStore((state) => state.clearThinking);
   const forceScenarioIdle = useScenarioStore((state) => state.forceIdle);
   const eventLog = useSystemStore((state) => state.eventLog);
@@ -166,6 +159,36 @@ export default function DashboardPage() {
   const dismissNotification = useSystemStore((state) => state.dismissNotification);
   const clearNotifications = useSystemStore((state) => state.clearNotifications);
 
+  // ─── AI 流式分析（A 的架构） ───
+  const { startStream, abort: abortStream } = useStreamingAI();
+  const incidentType = useScenarioStore((state) => state.incidentType);
+
+  // 当 phase 进入 ANALYZING 时触发 AI 流式，完成后 onDone 推进一个阶段
+  useEffect(() => {
+    if (phase === ScenarioPhase.SUPERVISOR_ANALYZING && incidentType) {
+      startStream({
+        agentId: 'supervisor',
+        incidentType: incidentType as IncidentType,
+        phase: 'supervisor',
+        telemetry: telemetry,
+        title: '监管智能体正在分析',
+        onDone: () => advanceScenarioPhase(),
+      });
+    } else if (phase === ScenarioPhase.AGENT_ANALYZING && incidentType && targetAgentId) {
+      startStream({
+        agentId: targetAgentId,
+        incidentType: incidentType as IncidentType,
+        phase: 'agent',
+        telemetry: telemetry,
+        title: `${AGENT_WINDOW_DATA[targetAgentId].name}执行推演`,
+        onDone: () => advanceScenarioPhase(),
+      });
+    } else if (phase === ScenarioPhase.IDLE) {
+      abortStream();
+    }
+  }, [phase]);
+
+  // ─── 派生状态 ───
   const visibleAgentId = activeWindowId ?? activeAgentId ?? targetAgentId;
   const currentAgent = visibleAgentId
     ? {
@@ -174,27 +197,31 @@ export default function DashboardPage() {
         status: agentUIStatus,
       }
     : null;
-  const dockAgents = AGENT_ORDER.map((agentId) => ({
-    id: agentId,
-    label: AGENT_WINDOW_DATA[agentId].englishName,
-    status: agentUIStatus,
-    badgeCount: agentUIStatus === 'alarm' && targetAgentId === agentId ? 1 : undefined,
-    isActive: activeWindowId === agentId && !windows[agentId].isMinimized,
-  }));
+  const dockAgents = AGENT_ORDER.map((agentId) => {
+    const uiStatus = RUN_STATUS_TO_UI[agentRunStatuses[agentId]];
+    return {
+      id: agentId,
+      label: AGENT_WINDOW_DATA[agentId].englishName,
+      status: uiStatus,
+      badgeCount: uiStatus === 'alarm' && targetAgentId === agentId ? 1 : undefined,
+      isActive: activeWindowId === agentId && !windows[agentId].isMinimized,
+    };
+  });
   const taskbarWindows = AGENT_ORDER.filter((agentId) => windows[agentId].isOpen).map((agentId) => ({
     agentId,
     title: AGENT_WINDOW_DATA[agentId].name,
-    status: agentUIStatus,
+    status: RUN_STATUS_TO_UI[agentRunStatuses[agentId]],
     isActive: activeWindowId === agentId,
     isMinimized: windows[agentId].isMinimized,
   }));
+
+  // ─── 事件处理 ───
 
   const handleSelectTaskbarWindow = (agentId: AgentId) => {
     if (windows[agentId].isMinimized) {
       restoreWindow(agentId);
       return;
     }
-
     focusWindow(agentId);
   };
 
@@ -217,7 +244,6 @@ export default function DashboardPage() {
 
   const handleTriggerIncident = (incidentType: Parameters<typeof triggerSimulationIncident>[0]) => {
     if (useScenarioStore.getState().phase !== ScenarioPhase.IDLE || simulation.active) return;
-
     triggerSimulationIncident(incidentType);
   };
 
@@ -258,6 +284,8 @@ export default function DashboardPage() {
     autoDemo.startAutoDemo();
   };
 
+  // ─── Hooks ───
+
   useKeyboard({
     phase,
     isHelpOpen,
@@ -281,6 +309,7 @@ export default function DashboardPage() {
     onWindowStatusText: setWindowStatusText,
   });
 
+  // ─── 场景触发：simulation.active 变化时启动 incident ───
   useEffect(() => {
     if (!simulation.active || !simulation.type) {
       lastIncidentRef.current = null;
@@ -318,13 +347,27 @@ export default function DashboardPage() {
     startScenarioIncident,
   ]);
 
+  // ─── 步进同步：simulation.step 变化时推进 phase ───
+  // 关键：ANALYZING 阶段由 AI 流式 onDone 推进，此处用 guard 阻塞
+  // 注意：thinking 数据由 A 的 useStreamingAI 写入，此处不再手动 setThinking
   useEffect(() => {
     if (!simulation.active) return;
 
     const expectedPhase = STEP_TO_PHASE[simulation.step];
     if (expectedPhase && phase !== expectedPhase) {
+      const currentPhase = useScenarioStore.getState().phase;
+      if (
+        currentPhase === ScenarioPhase.SUPERVISOR_ANALYZING ||
+        currentPhase === ScenarioPhase.AGENT_ANALYZING
+      ) {
+        return; // 等待 AI 流式完成后 onDone 推进
+      }
       let guard = 0;
       while (useScenarioStore.getState().phase !== expectedPhase && guard < 8) {
+        const p = useScenarioStore.getState().phase;
+        if (p === ScenarioPhase.SUPERVISOR_ANALYZING || p === ScenarioPhase.AGENT_ANALYZING) {
+          break; // 遇到 ANALYZING 停住，等 AI onDone
+        }
         advanceScenarioPhase();
         guard += 1;
       }
@@ -351,33 +394,18 @@ export default function DashboardPage() {
         window.setTimeout(() => useScenarioStore.getState().forceIdle(), 2000);
       }
     }
-
-    if (simulation.type) {
-      if (simulation.step === 2 || simulation.step === 3) {
-        // SUPERVISOR_ANALYZING: 显示监管气泡
-        setScenarioThinking('supervisor', buildThinking('supervisor', simulation.title, simulation.description));
-      } else if (simulation.step === 5) {
-        // AGENT_ANALYZING: 显示边缘 Agent 气泡
-        const targetAgent = INCIDENT_TO_AGENT[simulation.type];
-        setScenarioThinking(targetAgent, buildThinking(targetAgent, simulation.title, simulation.description));
-      } else {
-        // DISPATCHING(4) / EXECUTING(6) / 收尾(7+)：清除气泡
-        clearScenarioThinking();
-      }
-    }
   }, [
     advanceScenarioPhase,
-    clearScenarioThinking,
     phase,
     pushEvent,
     pushNotification,
-    setScenarioThinking,
     simulation.active,
-    simulation.description,
     simulation.step,
     simulation.title,
     simulation.type,
   ]);
+
+  // ─── JSX ───
 
   return (
     <>

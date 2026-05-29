@@ -5,6 +5,11 @@
  *       结果存入共享 bubbleStateRef，供 Canvas 外部的 BubbleOverlay 读取
  *
  * 不产生任何 DOM / JSX 输出（return null），避免 R3F 渲染 HTML 元素
+ *
+ * 兼容说明：
+ *   - A 的 useStreamingAI 写入 ThinkingContent { title, text, status }
+ *   - B 的 BubbleOverlay 从 store 读取 thinking.text 渲染流式文本
+ *   - 本组件只负责 3D → 2D 坐标投影，不关心 thinking 的内容格式
  */
 
 import { useRef, useMemo } from 'react';

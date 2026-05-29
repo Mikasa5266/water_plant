@@ -5,10 +5,14 @@
  * 1. 在 R3F Canvas **外部**渲染 → HTML 标签（<svg>, <div>）不会被 R3F 拦截
  * 2. 位置数据从共享 ref（bubbleStateRef）读取，由 ThinkingBubble 每帧写入
  *
- * 内容数据（thinking text）直接从 Zustand store 低频率读取，无性能问题
+ * 内容数据（thinking.text / thinking.status）直接从 Zustand store 读取
+ * 兼容 A 的流式 ThinkingContent：{ title, text, status: StreamingStatus }
+ *   - streaming: 逐字打字机 + 光标闪烁
+ *   - done: 全文显示
+ *   - error: 全文显示 + 错误标记
  */
 
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { useScenarioStore } from '../../stores/useScenarioStore';
 import type { AgentId, ThinkingContent } from '../../types';
 
@@ -54,37 +58,34 @@ export const BubbleOverlay: React.FC<BubbleOverlayProps> = ({ bubbleStateRef }) 
   const thinking = useScenarioStore((s) => s.thinking);
   const thinkingAgentId = useScenarioStore((s) => s.thinkingAgentId);
 
-  // 打字机效果（React state，仅打字时重渲染）
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [currentChar, setCurrentChar] = useState(0);
-  const [displayedPoints, setDisplayedPoints] = useState<string[]>([]);
+  // 打字机效果：本地逐字显示索引
+  const [displayedLength, setDisplayedLength] = useState(0);
 
+  // 当 thinking 变化（新标题/新内容）时重置打字机
   useEffect(() => {
-    setDisplayedPoints([]);
-    setCurrentIndex(0);
-    setCurrentChar(0);
-  }, [thinking]);
+    setDisplayedLength(0);
+  }, [thinking?.title]);
 
+  // 打字机动画：
+  //   - 流式 (streaming): 跟随 text.length 实时（AI 不断追回 token）
+  //   - 完成/错误 (done/error): 逐字打字机效果
   useEffect(() => {
-    if (!thinking || currentIndex >= thinking.points.length) return;
-    const point = thinking.points[currentIndex];
-    if (currentChar >= point.length) {
-      const t = setTimeout(() => {
-        setCurrentIndex((i) => i + 1);
-        setCurrentChar(0);
-      }, 300);
-      return () => clearTimeout(t);
+    if (!thinking) return;
+
+    // 流式时直接跟随 text 长度，不额外打字机延迟
+    if (thinking.status === 'streaming') {
+      setDisplayedLength(thinking.text.length);
+      return;
     }
-    const t = setTimeout(() => {
-      setCurrentChar((c) => c + 1);
-      setDisplayedPoints((prev) => {
-        const next = [...prev];
-        next[currentIndex] = point.slice(0, currentChar + 1);
-        return next;
-      });
+
+    // done / error / idle 状态：逐字打字机
+    if (displayedLength >= thinking.text.length) return;
+
+    const timer = setTimeout(() => {
+      setDisplayedLength((n) => n + 1);
     }, 25);
-    return () => clearTimeout(t);
-  }, [currentIndex, currentChar, thinking]);
+    return () => clearTimeout(timer);
+  }, [displayedLength, thinking]);
 
   // ── rAF 同步循环：每帧读 bubbleStateRef 并更新 DOM ──
   useEffect(() => {
@@ -119,7 +120,12 @@ export const BubbleOverlay: React.FC<BubbleOverlayProps> = ({ bubbleStateRef }) 
     };
   }, [thinking, bubbleStateRef]);
 
-  if (!thinking || !thinkingAgentId) return null;
+  if (!thinking || !thinkingAgentId || !thinking.text) return null;
+
+  // 截取已显示的文本，按行拆分
+  const displayText = thinking.text.slice(0, displayedLength);
+  const lines = displayText.split('\n').filter(Boolean);
+  const isStreaming = thinking.status === 'streaming';
 
   return (
     <>
@@ -155,6 +161,10 @@ export const BubbleOverlay: React.FC<BubbleOverlayProps> = ({ bubbleStateRef }) 
           border-left: 6px solid transparent;
           border-right: 6px solid transparent;
           border-top: none;
+        }
+        @keyframes blink-cursor {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0; }
         }
       `}</style>
 
@@ -200,6 +210,8 @@ export const BubbleOverlay: React.FC<BubbleOverlayProps> = ({ bubbleStateRef }) 
             borderRadius: 10,
             padding: '12px 16px',
             width: 228,
+            maxHeight: 260,
+            overflowY: 'auto',
             color: '#e2e8f0',
             fontFamily:
               '-apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif',
@@ -211,7 +223,7 @@ export const BubbleOverlay: React.FC<BubbleOverlayProps> = ({ bubbleStateRef }) 
               '0 4px 24px rgba(0, 0, 0, 0.4), 0 0 20px rgba(56, 189, 248, 0.12)',
             position: 'relative',
             userSelect: 'none',
-            whiteSpace: 'nowrap',
+            wordBreak: 'break-word',
           }}
           title="点击关闭"
           onClick={() => useScenarioStore.getState().clearThinking()}
@@ -234,37 +246,51 @@ export const BubbleOverlay: React.FC<BubbleOverlayProps> = ({ bubbleStateRef }) 
             {thinking.title}
           </div>
 
-          {/* 推理要点（打字机效果） */}
-          {thinking.points.slice(0, currentIndex + 1).map((_, i) => (
+          {/* 推理内容（逐行渲染，最后一行高亮） */}
+          {lines.map((line, i) => (
             <div
               key={i}
               style={{
-                color: i === currentIndex ? '#f1f5f9' : '#94a3b8',
+                color: i === lines.length - 1 ? '#f1f5f9' : '#94a3b8',
                 paddingLeft: 8,
                 borderLeft: '2px solid rgba(56, 189, 248, 0.35)',
                 marginBottom: 3,
                 fontSize: 13,
                 lineHeight: 1.6,
-                whiteSpace: 'nowrap',
               }}
             >
-              {displayedPoints[i] ?? ''}
-              {i === currentIndex &&
-                currentChar < (thinking?.points[currentIndex]?.length ?? 0) && (
-                  <span
-                    style={{
-                      display: 'inline-block',
-                      width: 1.5,
-                      height: 13,
-                      background: '#38bdf8',
-                      marginLeft: 1,
-                      verticalAlign: 'middle',
-                      animation: 'blink 0.7s infinite',
-                    }}
-                  />
-                )}
+              {line}
             </div>
           ))}
+
+          {/* 流式光标 */}
+          {isStreaming && (
+            <span
+              style={{
+                display: 'inline-block',
+                width: 1.5,
+                height: 13,
+                background: '#38bdf8',
+                marginLeft: 1,
+                verticalAlign: 'middle',
+                animation: 'blink-cursor 0.7s infinite',
+              }}
+            />
+          )}
+
+          {/* 错误标记 */}
+          {thinking.status === 'error' && (
+            <div
+              style={{
+                marginTop: 6,
+                color: '#f87171',
+                fontSize: 11,
+                opacity: 0.8,
+              }}
+            >
+              ⚠ 分析异常
+            </div>
+          )}
         </div>
       </div>
     </>

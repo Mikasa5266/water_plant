@@ -85,13 +85,8 @@ export const DEMO_SNAPSHOTS: Record<DemoState, DemoSnapshot> = {
     incidentType: 'dosing_abnormal',
     thinking: {
       title: '监管智能体正在分析',
-      summary: '检测到进水浊度异常飙升至 58 NTU，超出安全阈值 200%。正在关联加药系统历史数据与当前工况，定位根因并生成补偿方案...',
-      points: [
-        '读取实时遥测：进水浊度 58 NTU，出水浊度 2.1 NTU',
-        '对照阈值：进水浊度正常范围 10-25 NTU，当前严重超标',
-        '关联分析：加药量 4.8 mg/L 未随浊度变化自适应调整',
-        '初步判断：混凝剂投加量不足，需提升至 6.0 mg/L 以上',
-      ],
+      text: '检测到进水浊度异常飙升至 58 NTU，超出安全阈值 200%。正在关联加药系统历史数据与当前工况，定位根因并生成补偿方案...\n\n读取实时遥测：进水浊度 58 NTU，出水浊度 2.1 NTU\n对照阈值：进水浊度正常范围 10-25 NTU，当前严重超标\n关联分析：加药量 4.8 mg/L 未随浊度变化自适应调整\n初步判断：混凝剂投加量不足，需提升至 6.0 mg/L 以上',
+      status: 'done',
     },
     decisionSteps: buildSteps(2, 2),
     events: [
