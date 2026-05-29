@@ -20,34 +20,60 @@ import type { BubbleState } from './BubbleOverlay';
 const BW = 260;
 const BH = 130;
 const PADDING = 20;
-const GAP = 16;
+const EDGE_GAP = 18;
+const SUPERVISOR_GAP_X = 42;
+const SUPERVISOR_GAP_Y = 46;
 const SMOOTH_RATE = 0.08;
 
 type TailDir = BubbleState['tail'];
 
 /** 根据 Agent 屏幕像素坐标计算偏移方向 + 位置 */
-function calcOffset(ax: number, ay: number, vw: number, vh: number) {
+function clampBubble(x: number, y: number, vw: number, vh: number) {
+  return {
+    x: Math.max(PADDING, Math.min(vw - BW - PADDING, x)),
+    y: Math.max(PADDING, Math.min(vh - BH - PADDING, y)),
+  };
+}
+
+function calcLineStart(ox: number, oy: number, tail: TailDir) {
+  if (tail === 'left') return { x: ox, y: oy + BH / 2 };
+  if (tail === 'right') return { x: ox + BW, y: oy + BH / 2 };
+  return { x: ox, y: oy + BH };
+}
+
+/** 根据 Agent 屏幕像素坐标计算偏移方向 + 位置 */
+function calcOffset(agentId: AgentId, ax: number, ay: number, vw: number, vh: number) {
   const midX = vw / 2;
   const thr = vw * 0.15;
   let ox: number, oy: number, tail: TailDir;
 
-  if (ax < midX - thr) {
-    ox = ax + GAP;
+  if (agentId === 'supervisor') {
+    // 监管智能体处在主视觉中心，使用短距离侧向标注，避免整卡片高度上移。
+    if (ax > midX + thr) {
+      ox = ax - BW - SUPERVISOR_GAP_X;
+      tail = 'right';
+    } else {
+      ox = ax + SUPERVISOR_GAP_X;
+      tail = 'left';
+    }
+    oy = ay - SUPERVISOR_GAP_Y;
+  } else if (ax < midX - thr) {
+    ox = ax + EDGE_GAP;
     oy = ay - BH / 2;
     tail = 'left';
   } else if (ax > midX + thr) {
-    ox = ax - BW - GAP;
+    ox = ax - BW - EDGE_GAP;
     oy = ay - BH / 2;
     tail = 'right';
   } else {
-    ox = ax + GAP;
-    oy = ay - BH - GAP;
-    tail = 'top-left';
+    // 中央区域仍优先侧放，避免气泡与 Agent 纵向距离过大。
+    ox = ax + EDGE_GAP;
+    oy = ay - BH / 2;
+    tail = 'left';
   }
 
-  ox = Math.max(PADDING, Math.min(vw - BW - PADDING, ox));
-  oy = Math.max(PADDING, Math.min(vh - BH - PADDING, oy));
-  return { ox, oy, tail };
+  const clamped = clampBubble(ox, oy, vw, vh);
+  return { ox: clamped.x, oy: clamped.y, tail };
 }
 
 // ─── 组件 ────────────────────────────────────────────────────
@@ -95,15 +121,14 @@ export const ThinkingBubble: React.FC<ThinkingBubbleProps> = ({ bubbleStateRef }
     }
 
     const { ox, oy, tail } = calcOffset(
+      agentId,
       smooth.current.x,
       smooth.current.y,
       size.width,
       size.height,
     );
 
-    const ex = tail === 'left' ? ox : tail === 'right' ? ox + BW : ox;
-    const ey =
-      tail === 'left' ? oy + BH / 2 : tail === 'right' ? oy + BH / 2 : oy + BH;
+    const lineStart = calcLineStart(ox, oy, tail);
 
     bubbleStateRef.current = {
       ...bubbleStateRef.current,
@@ -111,8 +136,10 @@ export const ThinkingBubble: React.FC<ThinkingBubbleProps> = ({ bubbleStateRef }
       x: ox,
       y: oy,
       tail,
-      lineFromX: ex,
-      lineFromY: ey,
+      anchorX: smooth.current.x,
+      anchorY: smooth.current.y,
+      lineFromX: lineStart.x,
+      lineFromY: lineStart.y,
     };
   });
 

@@ -37,9 +37,8 @@ const SPECIALIST_AGENTS: AgentId[] = ['dosing', 'uf', 'ro', 'pump'];
  * - 修改 config.ts 中的 SCENE_SCALE 即可整体调整场景大小
  *
  * HUD 架构：
- * - overlayRef 扩散给 ThinkingBubble（Canvas 内部），
- *   由 ThinkingBubble 通过 createPortal 在 overlay 上渲染气泡 HTML。
- * - 气泡定位基于 camera.project() 纯屏幕空间，不受 Html 二次投影影响。
+ * - ThinkingBubble 在 Canvas 内只计算 Agent 的屏幕投影，不渲染 HTML。
+ * - BubbleOverlay 在 Canvas 外渲染气泡，避免 Drei Html 二次投影。
  */
 export const Scene3D: React.FC<Scene3DProps> = ({ className }) => {
   const overlayRef = useRef<HTMLDivElement>(null);
@@ -99,6 +98,9 @@ export const Scene3D: React.FC<Scene3DProps> = ({ className }) => {
         {/* ─── 相机控制器（scale 外面） ─── */}
         <CameraController />
 
+        {/* ─── 思考气泡（Canvas 内计算引擎，放在 scale 外避免坐标语义混淆） ─── */}
+        <ThinkingBubble bubbleStateRef={bubbleStateRef} />
+
         {/* ═══ 全局缩放 group ═══ */}
         <group scale={[SCENE_SCALE, SCENE_SCALE, SCENE_SCALE]}>
           {/* ─── 地面 ─── */}
@@ -120,9 +122,6 @@ export const Scene3D: React.FC<Scene3DProps> = ({ className }) => {
           {SPECIALIST_AGENTS.map((id) => (
             <AgentNode key={id} agentId={id} />
           ))}
-
-          {/* ─── 思考气泡（Canvas 内计算引擎） ─── */}
-          <ThinkingBubble bubbleStateRef={bubbleStateRef} />
 
           {/* ─── 粒子 ─── */}
           <ParticleSystem />

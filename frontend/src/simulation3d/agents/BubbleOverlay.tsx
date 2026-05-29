@@ -20,6 +20,8 @@ export interface BubbleState {
   x: number;
   y: number;
   tail: 'left' | 'right' | 'top-left';
+  anchorX: number;
+  anchorY: number;
   lineFromX: number;
   lineFromY: number;
 }
@@ -30,6 +32,8 @@ export const INITIAL_BUBBLE_STATE: BubbleState = {
   x: 0,
   y: 0,
   tail: 'left',
+  anchorX: 0,
+  anchorY: 0,
   lineFromX: 0,
   lineFromY: 0,
 };
@@ -102,9 +106,7 @@ export const BubbleOverlay: React.FC<BubbleOverlayProps> = ({ bubbleStateRef }) 
       if (lineEl.current) {
         lineEl.current.setAttribute(
           'd',
-          `M ${s.lineFromX} ${s.lineFromY} L ${s.x + 130} ${s.y + 65}`,
-          // 连线终点 = 卡片中心（近似 Agent 投影），因为卡片定位点 = 左上角
-          // 终点改为 Agent 投影点更精确，但卡片中心足够
+          `M ${s.lineFromX} ${s.lineFromY} L ${s.anchorX} ${s.anchorY}`,
         );
         lineEl.current.style.opacity = s.visible && !!thinking ? '1' : '0';
       }
