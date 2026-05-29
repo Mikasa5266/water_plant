@@ -352,12 +352,18 @@ export default function DashboardPage() {
       }
     }
 
-    if (simulation.type && simulation.step >= 2 && simulation.step <= 6) {
-      const targetAgent = INCIDENT_TO_AGENT[simulation.type];
-      const thinkingAgent = simulation.step >= 5 ? targetAgent : 'supervisor';
-      setScenarioThinking(thinkingAgent, buildThinking(thinkingAgent, simulation.title, simulation.description));
-    } else if (simulation.step >= 7) {
-      clearScenarioThinking();
+    if (simulation.type) {
+      if (simulation.step === 2 || simulation.step === 3) {
+        // SUPERVISOR_ANALYZING: 显示监管气泡
+        setScenarioThinking('supervisor', buildThinking('supervisor', simulation.title, simulation.description));
+      } else if (simulation.step === 5) {
+        // AGENT_ANALYZING: 显示边缘 Agent 气泡
+        const targetAgent = INCIDENT_TO_AGENT[simulation.type];
+        setScenarioThinking(targetAgent, buildThinking(targetAgent, simulation.title, simulation.description));
+      } else {
+        // DISPATCHING(4) / EXECUTING(6) / 收尾(7+)：清除气泡
+        clearScenarioThinking();
+      }
     }
   }, [
     advanceScenarioPhase,

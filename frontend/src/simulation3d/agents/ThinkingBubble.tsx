@@ -10,10 +10,11 @@
 import { useRef, useMemo } from 'react';
 import { useThree, useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
-import { AGENT_3D_ANCHORS } from '../../data/constants';
+import { BUBBLE_ANCHORS } from '../../data/constants';
 import { SCENE_SCALE } from '../config';
 import type { AgentId } from '../../types';
 import type { BubbleState } from './BubbleOverlay';
+import { debug3d } from '../utils/debug3d';
 
 // ─── 常量 ────────────────────────────────────────────────────
 
@@ -85,7 +86,7 @@ interface ThinkingBubbleProps {
 export const ThinkingBubble: React.FC<ThinkingBubbleProps> = ({ bubbleStateRef }) => {
   const { camera, size } = useThree();
   const agentId = bubbleStateRef.current.agentId;
-  const anchor = agentId ? AGENT_3D_ANCHORS[agentId] : null;
+  const anchor = agentId ? BUBBLE_ANCHORS[agentId] : null;
 
   const worldVec = useMemo(() => {
     if (!anchor) return new THREE.Vector3();
@@ -110,6 +111,12 @@ export const ThinkingBubble: React.FC<ThinkingBubbleProps> = ({ bubbleStateRef }
     if (smooth.current.x === -999) {
       smooth.current.x = rawX;
       smooth.current.y = rawY;
+      debug3d('bubble', {
+        action: 'first_project',
+        agentId,
+        anchor: `${anchor.x},${anchor.y},${anchor.z}`,
+        rawScreen: `${rawX.toFixed(0)},${rawY.toFixed(0)}`,
+      });
     } else {
       smooth.current.x += (rawX - smooth.current.x) * SMOOTH_RATE;
       smooth.current.y += (rawY - smooth.current.y) * SMOOTH_RATE;

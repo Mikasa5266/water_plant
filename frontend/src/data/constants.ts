@@ -70,6 +70,24 @@ export const DEVICE_ANCHORS = {
   pump: { x: 70, y: -55, z: 0 },
 } as const;
 
+/**
+ * 气泡标注锚点（思考气泡的屏幕投影锚定位置）
+ * 与 AGENT_3D_ANCHORS（Agent 球体位置）和设备锚点分离
+ *
+ * rationale：
+ * - supervisor：指向可见的 SupervisorHub 顶部（z≈30，中枢高度 0~23）
+ *   而非不可见的 Agent 球体悬浮高度（AGENT_3D_ANCHORS z=85），
+ *   避免气泡锚定到空中不可见点。
+ * - 边缘 agent：与 AGENT_3D_ANCHORS 一致（有可见 AgentNode 球体）
+ */
+export const BUBBLE_ANCHORS = {
+  supervisor: { x: 0, y: 0, z: 30 },
+  dosing: { x: -60, y: -70, z: 65 },
+  uf: { x: 20, y: 75, z: 60 },
+  ro: { x: 80, y: 10, z: 70 },
+  pump: { x: 70, y: -55, z: 60 },
+} as const;
+
 export const AGENT_3D_ANCHORS = {
   supervisor: { x: 0, y: 0, z: 85 },
   dosing: { x: -60, y: -70, z: 65 },

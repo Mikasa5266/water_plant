@@ -6,6 +6,7 @@ import { AGENT_3D_ANCHORS } from '../../data/constants';
 import { DEVICE_CENTERS } from '../config';
 import type { ParticleIntent, AgentId } from '../../types';
 import { toThreePosTuple } from '../utils/coordinates';
+import { debug3d } from '../utils/debug3d';
 
 const PARTICLE_COUNT = 60;
 const IDLE_COUNT = 30;
@@ -128,24 +129,9 @@ function buildPath(intent: ParticleIntent, targetAgentId: AgentId): THREE.Vector
       ];
     }
     case 'execute': {
-      // Agent 球体 → 设备（侧向弧线，避免穿透球体）
-      // Agent 和设备的 x/y 几乎重合，垂直弧线会穿透球体
-      // 改为侧向偏移：沿垂直于飞行方向的侧边弧线飞行
-      const dx = agentPos[0] - devicePos[0];
-      const dz = agentPos[2] - devicePos[2];
-      const horizontalDist = Math.sqrt(dx * dx + dz * dz);
-      // 侧向偏移方向（垂直于飞行方向的水平分量）
-      const perpX = horizontalDist > 0.1 ? -dz / horizontalDist : 1;
-      const perpZ = horizontalDist > 0.1 ? dx / horizontalDist : 0;
-      const lateralOffset = 25; // 侧向弧线幅度
-      const mid = new THREE.Vector3(
-        (agentPos[0] + devicePos[0]) / 2 + perpX * lateralOffset,
-        (agentPos[1] + devicePos[1]) / 2,
-        (agentPos[2] + devicePos[2]) / 2 + perpZ * lateralOffset,
-      );
+      // 执行信号：直线光束（Agent 与设备在近似竖线上，无需绕行）
       return [
         new THREE.Vector3(...agentPos),
-        mid,
         new THREE.Vector3(...devicePos),
       ];
     }
@@ -227,6 +213,17 @@ export const ParticleSystem: React.FC = () => {
         pathSegmentsRef.current.push([segments[i], segments[i + 1]]);
       }
 
+      const isStraight = particleIntent === 'execute';
+      debug3d('particle', {
+        action: 'build_path',
+        intent: particleIntent,
+        targetAgentId,
+        segmentCount: pathSegmentsRef.current.length,
+        mode: isStraight ? 'straight_line' : 'arc',
+        start: `${segments[0].x.toFixed(0)},${segments[0].y.toFixed(0)},${segments[0].z.toFixed(0)}`,
+        end: `${segments[segments.length - 1].x.toFixed(0)},${segments[segments.length - 1].y.toFixed(0)},${segments[segments.length - 1].z.toFixed(0)}`,
+      });
+
       particlesRef.current = Array.from({ length: PARTICLE_COUNT }, () => ({
         progress: Math.random(),
         speed: 0.15 + Math.random() * 0.55,
@@ -277,8 +274,8 @@ export const ParticleSystem: React.FC = () => {
         const to = seg[1];
         const t = p.progress;
 
-        // 弧线偏移（加大弧度）
-        const arcHeight = 35;
+        // 弧线偏移：execute 为直线（0），其余为弧线（35）
+        const arcHeight = particleIntent === 'execute' ? 0 : 35;
         const arc = 4 * arcHeight * t * (1 - t);
 
         const x = from.x + (to.x - from.x) * t;

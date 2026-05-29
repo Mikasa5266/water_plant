@@ -13,6 +13,18 @@ import type {
 import { ScenarioPhase as Phase } from '../types/index';
 import { DEVICE_FOCUS_PRESETS } from '../simulation3d/config';
 
+// 调试日志：阶段转换
+const logPhase = (from: string, to: string, extra?: Record<string, unknown>) => {
+  if (typeof process !== 'undefined' && process.env?.NODE_ENV === 'development') {
+    console.log(
+      `%c[3d:phase]%c ${from} → ${to}`,
+      'color:#60a5fa;font-weight:600',
+      'color:inherit',
+      extra ?? '',
+    );
+  }
+};
+
 // ─── Phase → Agent UI 四态映射 ───
 
 const PHASE_TO_UI_STATUS: Record<ScenarioPhase, AgentUIStatus> = {
@@ -149,6 +161,7 @@ export const useScenarioStore = create<ScenarioState & ScenarioActions>((set, ge
     if (get().phase !== Phase.IDLE) return;
 
     const targetAgent = INCIDENT_TO_AGENT[type];
+    logPhase('IDLE', 'ANOMALY_DETECTED', { incidentType: type, targetAgent });
     set({
       phase: Phase.ANOMALY_DETECTED,
       incidentType: type,
@@ -175,6 +188,7 @@ export const useScenarioStore = create<ScenarioState & ScenarioActions>((set, ge
     if (currentIndex < 0 || currentIndex >= PHASE_ORDER.length - 1) return;
 
     const nextPhase = PHASE_ORDER[currentIndex + 1];
+    logPhase(phase, nextPhase, { targetAgentId });
     const uiStatus = PHASE_TO_UI_STATUS[nextPhase];
 
     const patch: Partial<ScenarioState> = {
