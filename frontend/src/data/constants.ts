@@ -57,33 +57,46 @@ export const PIPE_PATHS = {
   ]
 } as const;
 
+/**
+ * 设备地理锚点（data 空间 x/y 坐标）
+ * 与 AGENT_3D_ANCHORS 分离，仅用于定位设备模块的位置
+ * z 固定为 0（设备贴地），不再耦合 Agent 球体的悬浮高度
+ */
+export const DEVICE_ANCHORS = {
+  supervisor: { x: 0, y: 0, z: 0 },
+  dosing: { x: -60, y: -70, z: 0 },
+  uf: { x: 20, y: 75, z: 0 },
+  ro: { x: 80, y: 10, z: 0 },
+  pump: { x: 70, y: -55, z: 0 },
+} as const;
+
 export const AGENT_3D_ANCHORS = {
-  supervisor: { x: 0, y: 0, z: 110 },
-  dosing: { x: -60, y: -70, z: 95 },
-  uf: { x: 20, y: 75, z: 85 },
-  ro: { x: 80, y: 10, z: 100 },
-  pump: { x: 70, y: -55, z: 85 }
+  supervisor: { x: 0, y: 0, z: 85 },
+  dosing: { x: -60, y: -70, z: 65 },
+  uf: { x: 20, y: 75, z: 60 },
+  ro: { x: 80, y: 10, z: 70 },
+  pump: { x: 70, y: -55, z: 60 },
 } as const;
 
 export const PARTICLE_ANIM_COORDS: Record<AgentId, { origin: { x: number; y: number; z: number }; target: { x: number; y: number; z: number } }> = {
   dosing: {
     origin: { x: -60, y: -70, z: -10 },
-    target: { x: -60, y: -70, z: 95 }
+    target: { x: -60, y: -70, z: 65 }
   },
   uf: {
     origin: { x: 20, y: 75, z: 20 },
-    target: { x: 20, y: 75, z: 85 }
+    target: { x: 20, y: 75, z: 60 }
   },
   ro: {
     origin: { x: 80, y: 10, z: 20 },
-    target: { x: 80, y: 10, z: 100 }
+    target: { x: 80, y: 10, z: 70 }
   },
   supervisor: {
     origin: { x: 0, y: 0, z: 10 },
-    target: { x: 0, y: 0, z: 110 }
+    target: { x: 0, y: 0, z: 85 }
   },
   pump: {
     origin: { x: 70, y: -55, z: 15 },
-    target: { x: 70, y: -55, z: 85 }
+    target: { x: 70, y: -55, z: 60 }
   }
 };

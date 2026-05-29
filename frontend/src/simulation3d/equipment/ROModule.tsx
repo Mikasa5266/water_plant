@@ -1,6 +1,6 @@
 import React from 'react';
 import type { AgentId } from '../../types';
-import { AGENT_3D_ANCHORS } from '../../data/constants';
+import { DEVICE_ANCHORS } from '../../data/constants';
 import { toThreePos } from '../utils/coordinates';
 
 interface ROModuleProps {
@@ -12,7 +12,7 @@ interface ROModuleProps {
  * 位于水厂右前方（终端高精过滤）
  */
 export const ROModule: React.FC<ROModuleProps> = () => {
-  const anchor = AGENT_3D_ANCHORS.ro;
+  const anchor = DEVICE_ANCHORS.ro;
   const pos = toThreePos(anchor.x, anchor.y, anchor.z);
 
   return (
@@ -32,7 +32,13 @@ export const ROModule: React.FC<ROModuleProps> = () => {
       ].map((wall, i) => (
         <mesh key={`wall-${i}`} position={[wall.px, 4.5, wall.pz]} castShadow>
           <boxGeometry args={[wall.w, 7, wall.d]} />
-          <meshStandardMaterial color="#334155" roughness={0.4} metalness={0.5} />
+          <meshStandardMaterial
+            color="#334155"
+            emissive="#334155"
+            emissiveIntensity={0.1}
+            roughness={0.4}
+            metalness={0.5}
+          />
         </mesh>
       ))}
 
@@ -44,7 +50,7 @@ export const ROModule: React.FC<ROModuleProps> = () => {
             <meshStandardMaterial
               color="#d85a30"
               emissive="#d85a30"
-              emissiveIntensity={0.2}
+              emissiveIntensity={0.4}
               transparent
               opacity={0.7}
               roughness={0.2}
@@ -76,7 +82,13 @@ export const ROModule: React.FC<ROModuleProps> = () => {
         {/* 泵体大圆柱 */}
         <mesh position={[0, 4.5, 0]} castShadow>
           <cylinderGeometry args={[2.6, 2.8, 4, 20]} />
-          <meshStandardMaterial color="#475569" roughness={0.3} metalness={0.7} />
+          <meshStandardMaterial
+            color="#475569"
+            emissive="#475569"
+            emissiveIntensity={0.15}
+            roughness={0.3}
+            metalness={0.7}
+          />
         </mesh>
 
         {/* 泵电机 */}

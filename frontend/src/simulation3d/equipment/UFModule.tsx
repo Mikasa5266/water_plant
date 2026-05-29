@@ -1,6 +1,6 @@
 import React from 'react';
 import type { AgentId } from '../../types';
-import { AGENT_3D_ANCHORS } from '../../data/constants';
+import { DEVICE_ANCHORS } from '../../data/constants';
 import { toThreePos } from '../utils/coordinates';
 
 interface UFModuleProps {
@@ -12,7 +12,7 @@ interface UFModuleProps {
  * 位于水厂左后方（中段处理）
  */
 export const UFModule: React.FC<UFModuleProps> = () => {
-  const anchor = AGENT_3D_ANCHORS.uf;
+  const anchor = DEVICE_ANCHORS.uf;
   const pos = toThreePos(anchor.x, anchor.y, anchor.z);
 
   // 三根超滤柱沿 X 轴等距分布
@@ -23,7 +23,13 @@ export const UFModule: React.FC<UFModuleProps> = () => {
       {/* 基座平板 */}
       <mesh position={[0, 0.4, 0]} castShadow receiveShadow>
         <boxGeometry args={[28, 0.8, 14]} />
-        <meshStandardMaterial color="#1e293b" roughness={0.4} metalness={0.6} />
+        <meshStandardMaterial
+          color="#1e293b"
+          emissive="#1e293b"
+          emissiveIntensity={0.1}
+          roughness={0.4}
+          metalness={0.6}
+        />
       </mesh>
 
       {columns.map((cx, i) => (
@@ -32,7 +38,9 @@ export const UFModule: React.FC<UFModuleProps> = () => {
           <mesh position={[0, 8.5, 0]} castShadow>
             <cylinderGeometry args={[2.0, 2.2, 15, 20]} />
             <meshStandardMaterial
-              color="#065f46"
+              color="#047857"
+              emissive="#065f46"
+              emissiveIntensity={0.15}
               roughness={0.35}
               metalness={0.3}
             />

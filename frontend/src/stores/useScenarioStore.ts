@@ -60,7 +60,8 @@ export interface ScenarioState {
   // 3D 动画控制
   particleIntent: ParticleIntent | null;
   cameraFocus: CameraFocusTarget | null;
-  deviceFlashing: AgentId | null;
+  /** 正在闪烁的设备 ID（控制 AlarmFlash 光环），仅异常初期对设备闪红 */
+  flashingDeviceId: AgentId | null;
 
   // 时间戳
   phaseStartTime: number;
@@ -139,7 +140,7 @@ export const useScenarioStore = create<ScenarioState & ScenarioActions>((set, ge
   decisionSteps: DEFAULT_DECISION_STEPS.map(s => ({ ...s })),
   particleIntent: null,
   cameraFocus: null,
-  deviceFlashing: null,
+  flashingDeviceId: null,
   phaseStartTime: Date.now(),
 
   // ─── Actions ───
@@ -156,7 +157,7 @@ export const useScenarioStore = create<ScenarioState & ScenarioActions>((set, ge
       agentUIStatus: 'pending',
       particleIntent: 'anomaly',
       // 故障设备闪红（AlarmFlash），但 Agent 球体暂不变色（还没感知到）
-      deviceFlashing: targetAgent,
+      flashingDeviceId: targetAgent,
       thinking: null,
       thinkingAgentId: null,
       decisionSteps: DEFAULT_DECISION_STEPS.map((s, i) =>
@@ -212,7 +213,7 @@ export const useScenarioStore = create<ScenarioState & ScenarioActions>((set, ge
         patch.particleIntent = null;
         patch.activeAgentId = targetAgentId;
         // 命令已下发：Agent 接手，停止设备闪红
-        patch.deviceFlashing = null;
+        patch.flashingDeviceId = null;
         // 目标 Agent 变 warning（橙色）
         if (targetAgentId) {
           patch.agentRunStatuses = {
@@ -284,7 +285,7 @@ export const useScenarioStore = create<ScenarioState & ScenarioActions>((set, ge
       decisionSteps: DEFAULT_DECISION_STEPS.map(s => ({ ...s })),
       particleIntent: null,
       cameraFocus: null,
-      deviceFlashing: null,
+      flashingDeviceId: null,
       phaseStartTime: Date.now(),
     });
   },

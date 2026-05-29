@@ -1,6 +1,6 @@
 import React from 'react';
 import type { AgentId } from '../../types';
-import { AGENT_3D_ANCHORS } from '../../data/constants';
+import { DEVICE_ANCHORS } from '../../data/constants';
 import { toThreePos } from '../utils/coordinates';
 
 interface DosingModuleProps {
@@ -12,7 +12,7 @@ interface DosingModuleProps {
  * 位于水厂左前方（前段处理）
  */
 export const DosingModule: React.FC<DosingModuleProps> = () => {
-  const anchor = AGENT_3D_ANCHORS.dosing;
+  const anchor = DEVICE_ANCHORS.dosing;
   const pos = toThreePos(anchor.x, anchor.y, anchor.z);
 
   return (
@@ -20,14 +20,22 @@ export const DosingModule: React.FC<DosingModuleProps> = () => {
       {/* 基座平台 */}
       <mesh position={[0, 0.6, 0]} castShadow receiveShadow>
         <boxGeometry args={[22, 1.2, 22]} />
-        <meshStandardMaterial color="#334155" roughness={0.5} metalness={0.6} />
+        <meshStandardMaterial
+          color="#334155"
+          emissive="#334155"
+          emissiveIntensity={0.1}
+          roughness={0.5}
+          metalness={0.6}
+        />
       </mesh>
 
       {/* 药箱主体（大圆柱） */}
       <mesh position={[0, 9, 0]} castShadow>
         <cylinderGeometry args={[5, 5, 16, 24]} />
         <meshStandardMaterial
-          color="#78350f"
+          color="#92400e"
+          emissive="#78350f"
+          emissiveIntensity={0.15}
           roughness={0.4}
           metalness={0.3}
         />
@@ -51,7 +59,7 @@ export const DosingModule: React.FC<DosingModuleProps> = () => {
         <meshStandardMaterial
           color="#fbbf24"
           emissive="#f59e0b"
-          emissiveIntensity={0.3}
+          emissiveIntensity={0.5}
           transparent
           opacity={0.4}
           roughness={0.3}
@@ -74,7 +82,13 @@ export const DosingModule: React.FC<DosingModuleProps> = () => {
         {/* 泵体圆柱 */}
         <mesh position={[0, 4.5, 0]} castShadow>
           <cylinderGeometry args={[2, 2, 4, 16]} />
-          <meshStandardMaterial color="#475569" roughness={0.3} metalness={0.7} />
+          <meshStandardMaterial
+            color="#475569"
+            emissive="#475569"
+            emissiveIntensity={0.15}
+            roughness={0.3}
+            metalness={0.7}
+          />
         </mesh>
         {/* 泵电机 */}
         <mesh position={[1.6, 4.5, 0]}>

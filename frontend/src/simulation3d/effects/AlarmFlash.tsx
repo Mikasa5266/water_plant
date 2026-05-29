@@ -8,14 +8,15 @@ import { toThreePos } from '../utils/coordinates';
 
 /**
  * 设备红色闪烁效果
- * 当 deviceFlashing 不为 null 时，在对应设备位置显示红色脉冲光环
+ * 当 flashingDeviceId 不为 null 时，在对应设备位置显示红色脉冲光环
+ * 仅控制设备本体闪红，不影响对应 Agent 球体颜色（由 AgentNode 独立控制）
  */
 export const AlarmFlash: React.FC = () => {
-  const deviceFlashing = useScenarioStore((s) => s.deviceFlashing);
+  const flashingDeviceId = useScenarioStore((s) => s.flashingDeviceId);
 
-  if (!deviceFlashing) return null;
+  if (!flashingDeviceId) return null;
 
-  return <AlarmFlashRing agentId={deviceFlashing} />;
+  return <AlarmFlashRing agentId={flashingDeviceId} />;
 };
 
 const AlarmFlashRing: React.FC<{ agentId: AgentId }> = ({ agentId }) => {

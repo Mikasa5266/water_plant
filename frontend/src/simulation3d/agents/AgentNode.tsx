@@ -19,13 +19,11 @@ const AGENT_COLORS: Record<AgentId, string> = {
   pump: '#534AB7',
 };
 
-/** 根据 Agent 运行状态 + 是否被闪烁设备 决定发光色 */
+/** 根据 Agent 运行状态决定发光色（不再与设备闪烁耦合） */
 function getAgentEmissive(
   agentId: AgentId,
   runStatus: AgentRunStatus,
-  isFlashing: boolean,
 ): string {
-  if (isFlashing) return '#ef4444'; // 红闪
   if (runStatus === 'warning') return '#f59e0b'; // 橙告警
   if (runStatus === 'executing' || runStatus === 'processing') return '#10b981'; // 绿执行
   if (runStatus === 'thinking') return '#60a5fa'; // 蓝分析中
@@ -35,6 +33,7 @@ function getAgentEmissive(
 /**
  * 专项 Agent 发光球体
  * 悬浮于各自设备模块上方，颜色按 agentRunStatuses[agentId] 独立变化
+ * 不再响应 deviceFlashing（设备闪红由 AlarmFlash 独立控制）
  */
 export const AgentNode: React.FC<AgentNodeProps> = ({ agentId }) => {
   const anchor = AGENT_3D_ANCHORS[agentId];
@@ -42,31 +41,22 @@ export const AgentNode: React.FC<AgentNodeProps> = ({ agentId }) => {
 
   // 按 agentId 独立读取运行状态（不再是全局 agentUIStatus）
   const runStatus = useScenarioStore((s) => s.agentRunStatuses[agentId]);
-  const deviceFlashing = useScenarioStore((s) => s.deviceFlashing);
-  const isFlashing = deviceFlashing === agentId;
 
   const emissiveColor = useMemo(
-    () => getAgentEmissive(agentId, runStatus, isFlashing),
-    [agentId, runStatus, isFlashing],
+    () => getAgentEmissive(agentId, runStatus),
+    [agentId, runStatus],
   );
 
   const outerRef = useRef<THREE.Mesh>(null);
   const innerRef = useRef<THREE.Mesh>(null);
 
-  // 呼吸动画 + 报警闪烁
+  // 呼吸动画（仅正常呼吸，无红闪模式）
   useFrame(({ clock }) => {
     const t = clock.getElapsedTime();
 
     if (outerRef.current) {
-      if (isFlashing) {
-        // 快速脉冲闪烁
-        const pulse = 0.7 + Math.abs(Math.sin(t * 8)) * 0.6;
-        outerRef.current.scale.setScalar(pulse);
-      } else {
-        // 正常呼吸
-        const breath = 1 + Math.sin(t * 1.8) * 0.08;
-        outerRef.current.scale.setScalar(breath);
-      }
+      const breath = 1 + Math.sin(t * 1.8) * 0.08;
+      outerRef.current.scale.setScalar(breath);
     }
 
     if (innerRef.current) {
@@ -82,7 +72,7 @@ export const AgentNode: React.FC<AgentNodeProps> = ({ agentId }) => {
         <meshStandardMaterial
           color={emissiveColor}
           emissive={emissiveColor}
-          emissiveIntensity={isFlashing ? 1.5 : 0.8}
+          emissiveIntensity={0.8}
           roughness={0.2}
           metalness={0.1}
           transparent

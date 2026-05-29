@@ -91,9 +91,11 @@ export const DEVICE_CENTERS: Record<string, { x: number; y: number; z: number }>
  *
  * 聚焦流程（见 CameraController）：
  *  1. 锁住 OrbitControls（禁止用户拖拽）
- *  2. 快速收敛到 DEMO_ORBIT_START（0.4s）
- *  3. 从 DEMO_ORBIT_START 飞向本预设（duration - 0.4s）
+ *  2. 延迟 400ms，让设备高亮/脉冲圈先出现
+ *  3. 单段从当前视角直接飞向本预设（时长按距离动态计算 0.9s-2.0s）
  *  4. 到位后解锁 OrbitControls（用户可自由调整视角）
+ *
+ * 不再使用 DEMO_ORBIT_START，聚焦始终从当前视角开始，不做回拉/收敛。
  */
 export const DEVICE_FOCUS_PRESETS: Record<
   string,

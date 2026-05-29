@@ -2,7 +2,7 @@ import React, { useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import type { AgentId } from '../../types';
-import { AGENT_3D_ANCHORS } from '../../data/constants';
+import { AGENT_3D_ANCHORS, DEVICE_ANCHORS } from '../../data/constants';
 import { useScenarioStore } from '../../stores/useScenarioStore';
 import { toThreePos } from '../utils/coordinates';
 
@@ -15,7 +15,7 @@ interface SupervisorHubProps {
  * 位于场景中心，代表全厂大脑
  */
 export const SupervisorHub: React.FC<SupervisorHubProps> = () => {
-  const anchor = AGENT_3D_ANCHORS.supervisor;
+  const anchor = DEVICE_ANCHORS.supervisor;
   const pos = toThreePos(anchor.x, anchor.y, anchor.z);
   const groundY = 0;
 

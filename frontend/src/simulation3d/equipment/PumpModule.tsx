@@ -1,6 +1,6 @@
 import React from 'react';
 import type { AgentId } from '../../types';
-import { AGENT_3D_ANCHORS } from '../../data/constants';
+import { DEVICE_ANCHORS } from '../../data/constants';
 import { toThreePos } from '../utils/coordinates';
 
 interface PumpModuleProps {
@@ -12,7 +12,7 @@ interface PumpModuleProps {
  * 位于水厂右下方
  */
 export const PumpModule: React.FC<PumpModuleProps> = () => {
-  const anchor = AGENT_3D_ANCHORS.pump;
+  const anchor = DEVICE_ANCHORS.pump;
   const pos = toThreePos(anchor.x, anchor.y, anchor.z);
 
   // 3个泵沿 X 轴排列
@@ -23,7 +23,13 @@ export const PumpModule: React.FC<PumpModuleProps> = () => {
       {/* 总底座 */}
       <mesh position={[0, 0.5, 0]} castShadow receiveShadow>
         <boxGeometry args={[20, 1.2, 12]} />
-        <meshStandardMaterial color="#1e293b" roughness={0.4} metalness={0.6} />
+        <meshStandardMaterial
+          color="#1e293b"
+          emissive="#1e293b"
+          emissiveIntensity={0.1}
+          roughness={0.4}
+          metalness={0.6}
+        />
       </mesh>
 
       {pumps.map((px, i) => (
@@ -37,7 +43,13 @@ export const PumpModule: React.FC<PumpModuleProps> = () => {
           {/* 泵体主干圆柱 */}
           <mesh position={[0, 4.5, 0]} castShadow>
             <cylinderGeometry args={[2, 2.2, 4.5, 16]} />
-            <meshStandardMaterial color="#475569" roughness={0.3} metalness={0.7} />
+            <meshStandardMaterial
+              color="#475569"
+              emissive="#475569"
+              emissiveIntensity={0.15}
+              roughness={0.3}
+              metalness={0.7}
+            />
           </mesh>
 
           {/* 泵顶盖 */}

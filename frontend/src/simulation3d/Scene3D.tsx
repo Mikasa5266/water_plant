@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { Canvas } from '@react-three/fiber';
 import type { AgentId } from '../types';
 import { CameraController } from './CameraController';
@@ -11,6 +11,8 @@ import { PumpModule } from './equipment/PumpModule';
 import { PipelineSystem } from './pipelines/PipelineSystem';
 import { AgentNode } from './agents/AgentNode';
 import { ThinkingBubble } from './agents/ThinkingBubble';
+import { BubbleOverlay, INITIAL_BUBBLE_STATE } from './agents/BubbleOverlay';
+import { useScenarioStore } from '../stores/useScenarioStore';
 import { ParticleSystem } from './pipelines/ParticleSystem';
 import { AlarmFlash } from './effects/AlarmFlash';
 import { RecoveryGradient } from './effects/RecoveryGradient';
@@ -33,10 +35,31 @@ const SPECIALIST_AGENTS: AgentId[] = ['dosing', 'uf', 'ro', 'pump'];
  * - 相机 + 灯光在 scale group 外面（不受 SCENE_SCALE 影响）
  * - 全部 3D 内容在 scale group 内部（统一由 SCENE_SCALE 缩放）
  * - 修改 config.ts 中的 SCENE_SCALE 即可整体调整场景大小
+ *
+ * HUD 架构：
+ * - overlayRef 扩散给 ThinkingBubble（Canvas 内部），
+ *   由 ThinkingBubble 通过 createPortal 在 overlay 上渲染气泡 HTML。
+ * - 气泡定位基于 camera.project() 纯屏幕空间，不受 Html 二次投影影响。
  */
 export const Scene3D: React.FC<Scene3DProps> = ({ className }) => {
+  const overlayRef = useRef<HTMLDivElement>(null);
+
+  // 共享气泡状态：ThinkingBubble（Canvas 内）每帧写入，
+  // BubbleOverlay（Canvas 外）每帧通过 rAF 读取
+  const bubbleStateRef = useRef({ ...INITIAL_BUBBLE_STATE });
+  // 同步 agentId（当 thinking 触发时）
+  const targetAgentId = useScenarioStore((s) => s.targetAgentId);
+  const thinking = useScenarioStore((s) => s.thinking);
+  const thinkingAgentId = useScenarioStore((s) => s.thinkingAgentId);
+  if (thinking && thinkingAgentId) {
+    bubbleStateRef.current.agentId = thinkingAgentId;
+  }
+
   return (
-    <div className={className} style={{ width: '100%', height: '100%', minHeight: 480 }}>
+    <div
+      className={className}
+      style={{ width: '100%', height: '100%', minHeight: 480, position: 'relative' }}
+    >
       <Canvas
         shadows
         gl={{
@@ -53,7 +76,11 @@ export const Scene3D: React.FC<Scene3DProps> = ({ className }) => {
         style={{ background: 'radial-gradient(ellipse at 50% 50%, #0f172a 0%, #020617 100%)' }}
       >
         {/* ─── 灯光（scale 外面，保持恒定照明） ─── */}
-        <ambientLight intensity={0.6} />
+        <ambientLight intensity={0.8} />
+        {/* 半球光补充环境漫反射，避免底部过暗 */}
+        <hemisphereLight
+          args={['#0a1628', '#1e293b', 0.4]}
+        />
         <directionalLight
           position={[80, 120, 60]}
           intensity={1.5}
@@ -94,8 +121,8 @@ export const Scene3D: React.FC<Scene3DProps> = ({ className }) => {
             <AgentNode key={id} agentId={id} />
           ))}
 
-          {/* ─── 思考气泡 ─── */}
-          <ThinkingBubble />
+          {/* ─── 思考气泡（Canvas 内计算引擎） ─── */}
+          <ThinkingBubble bubbleStateRef={bubbleStateRef} />
 
           {/* ─── 粒子 ─── */}
           <ParticleSystem />
@@ -106,6 +133,20 @@ export const Scene3D: React.FC<Scene3DProps> = ({ className }) => {
           <DeviceAction />
         </group>
       </Canvas>
+
+      {/* ─── 2D HUD 覆盖层（Canvas 外部 HTML 渲染） ─── */}
+      <div
+        ref={overlayRef}
+        style={{
+          position: 'absolute',
+          inset: 0,
+          pointerEvents: 'none',
+          zIndex: 10,
+          overflow: 'hidden',
+        }}
+      >
+        <BubbleOverlay bubbleStateRef={bubbleStateRef} />
+      </div>
     </div>
   );
 };
