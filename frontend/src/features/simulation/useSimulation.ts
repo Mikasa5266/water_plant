@@ -3,6 +3,7 @@ import type { AgentId, AgentLog, AgentStatusMap, IncidentType, TelemetryState, A
 import { getTimestamp } from '../../utils/format';
 import { getScenarioMeta } from './simulationScripts';
 import { applyDosingStep, applyUfStep, applyRoStep, applyPumpStep } from './stepAppliers';
+import { DEFAULT_TELEMETRY } from '../../data/defaultTelemetry';
 
 interface UseSimulationDeps {
   animationTickRef: React.RefObject<number>;
@@ -192,16 +193,7 @@ export function useSimulation(deps: UseSimulationDeps) {
   const resetToNormal = () => {
     setIsPlaying(false);
     setActiveAnim(null);
-    setTelemetry({
-      inletFlow: 1240, outletFlow: 1210,
-      inletTurbidity: 18.5, outletTurbidity: 0.04,
-      dosingRate: 4.8, chemicalLevel: 72,
-      ufPressure: 82, roPressureDiff: 0.45, roFlux: 75.2,
-      roConductivity: 18, roFlushMode: 'ready', roRecoveryTime: 0,
-      pumpSpeed: 1480, pumpCurrent: 28, pumpTemperature: 55, pumpStatus: 'normal',
-      energyConsumption: 0.22, healthScore: 98,
-      activeAgentsCount: 5, onlineRate: 99.2
-    });
+    setTelemetry({ ...DEFAULT_TELEMETRY });
     setAgentStatuses({ supervisor: 'monitoring', dosing: 'monitoring', uf: 'monitoring', ro: 'monitoring', pump: 'monitoring' });
     setSimulation({
       active: false, type: null, step: 0,

@@ -3,6 +3,7 @@ import { Activity } from 'lucide-react';
 import { AnimatePresence } from 'motion/react';
 import type { AgentId, TelemetryState } from '../types/index';
 import { ScenarioPhase } from '../types/index';
+import { DEFAULT_TELEMETRY } from '../data/defaultTelemetry';
 import { useAnimationLoop } from '../hooks/useAnimationLoop';
 import { useClock } from '../hooks/useClock';
 import { useKeyboard } from '../hooks/useKeyboard';
@@ -70,28 +71,7 @@ function buildThinking(agentId: AgentId, title: string, description: string) {
 
 export default function DashboardPage() {
   const containerRef = useRef<HTMLDivElement>(null);
-  const [telemetry, setTelemetry] = useState<TelemetryState>({
-    inletFlow: 1240,
-    outletFlow: 1210,
-    inletTurbidity: 18.5,
-    outletTurbidity: 0.04,
-    dosingRate: 4.8,
-    chemicalLevel: 72,
-    ufPressure: 82,
-    roPressureDiff: 0.45,
-    roFlux: 74.5,
-    roConductivity: 18,
-    roFlushMode: 'ready',
-    roRecoveryTime: 0,
-    pumpSpeed: 1480,
-    pumpCurrent: 28,
-    pumpTemperature: 55,
-    pumpStatus: 'normal',
-    energyConsumption: 0.22,
-    healthScore: 98,
-    activeAgentsCount: 5,
-    onlineRate: 99.2,
-  });
+  const [telemetry, setTelemetry] = useState<TelemetryState>(DEFAULT_TELEMETRY);
   const [activeTab, setActiveTab] = useState<'model' | 'simulation_studio'>('model');
   const [camera, setCamera] = useState({ yaw: -35, pitch: 35, zoom: 0.95 });
   const [isHelpOpen, setIsHelpOpen] = useState(false);
