@@ -3,6 +3,7 @@ load_dotenv()
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.routing import APIRouter
 from pydantic import BaseModel
 from datetime import datetime, timezone
 from uuid import uuid4
@@ -18,10 +19,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(ai_router, prefix="/api")
+api = APIRouter(prefix="/api")
+
+api.include_router(ai_router)
 
 
-@app.get("/plant/overview")
+@api.get("/plant/overview")
 def get_plant_overview():
     return {
         "id": "plant-main",
@@ -37,7 +40,7 @@ def get_plant_overview():
     }
 
 
-@app.get("/devices")
+@api.get("/devices")
 def list_devices():
     return [
         {
@@ -83,7 +86,7 @@ def list_devices():
     ]
 
 
-@app.get("/alerts")
+@api.get("/alerts")
 def list_alerts():
     return []
 
@@ -93,7 +96,7 @@ class CreateAgentRunRequest(BaseModel):
     context: dict | None = None
 
 
-@app.post("/agent/runs", status_code=202)
+@api.post("/agent/runs", status_code=202)
 def create_agent_run(req: CreateAgentRunRequest):
     return {
         "id": f"run-{uuid4().hex[:8]}",
@@ -105,3 +108,5 @@ def create_agent_run(req: CreateAgentRunRequest):
 @app.get("/health")
 def health():
     return {"status": "ok"}
+
+app.include_router(api)
